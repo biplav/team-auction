@@ -8,12 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
 import { Pencil } from "lucide-react";
 
 interface Auction {
   id: string;
   name: string;
+  sport: string;
   status: string;
   maxTeams: number;
   maxPlayersPerTeam: number;
@@ -26,6 +28,15 @@ interface Auction {
   };
 }
 
+const SPORT_OPTIONS = [
+  "Cricket",
+  "Football",
+  "Badminton",
+  "Pickleball",
+  "Tennis",
+  "Other"
+];
+
 export default function AuctionsPage() {
   const [auctions, setAuctions] = useState<Auction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +47,8 @@ export default function AuctionsPage() {
   const [updating, setUpdating] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
+    sport: "Cricket",
+    customSport: "",
     maxTeams: 8,
     maxPlayersPerTeam: 15,
     minPlayersPerTeam: 11,
@@ -43,6 +56,8 @@ export default function AuctionsPage() {
   });
   const [editFormData, setEditFormData] = useState({
     name: "",
+    sport: "Cricket",
+    customSport: "",
     maxTeams: 8,
     maxPlayersPerTeam: 15,
     minPlayersPerTeam: 11,
@@ -69,18 +84,41 @@ export default function AuctionsPage() {
     e.preventDefault();
     setCreating(true);
 
+    const finalSport = formData.sport === "Other" ? formData.customSport : formData.sport;
+
+    if (formData.sport === "Other" && !formData.customSport.trim()) {
+      alert("Please enter a sport name");
+      setCreating(false);
+      return;
+    }
+
     try {
       const response = await fetch("/api/auctions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name,
+          sport: finalSport,
+          maxTeams: formData.maxTeams,
+          maxPlayersPerTeam: formData.maxPlayersPerTeam,
+          minPlayersPerTeam: formData.minPlayersPerTeam,
+          minPlayerPrice: formData.minPlayerPrice,
+        }),
       });
 
       if (response.ok) {
         setOpen(false);
-        setFormData({ name: "", maxTeams: 8, maxPlayersPerTeam: 15, minPlayersPerTeam: 11, minPlayerPrice: 50000 });
+        setFormData({
+          name: "",
+          sport: "Cricket",
+          customSport: "",
+          maxTeams: 8,
+          maxPlayersPerTeam: 15,
+          minPlayersPerTeam: 11,
+          minPlayerPrice: 0
+        });
         fetchAuctions();
       } else {
         const error = await response.json();
@@ -96,8 +134,11 @@ export default function AuctionsPage() {
 
   const handleEditClick = (auction: Auction) => {
     setEditingAuction(auction);
+    const isOtherSport = !SPORT_OPTIONS.slice(0, -1).includes(auction.sport);
     setEditFormData({
       name: auction.name,
+      sport: isOtherSport ? "Other" : auction.sport,
+      customSport: isOtherSport ? auction.sport : "",
       maxTeams: auction.maxTeams,
       maxPlayersPerTeam: auction.maxPlayersPerTeam,
       minPlayersPerTeam: auction.minPlayersPerTeam,
@@ -110,6 +151,13 @@ export default function AuctionsPage() {
     e.preventDefault();
     if (!editingAuction) return;
 
+    const finalSport = editFormData.sport === "Other" ? editFormData.customSport : editFormData.sport;
+
+    if (editFormData.sport === "Other" && !editFormData.customSport.trim()) {
+      alert("Please enter a sport name");
+      return;
+    }
+
     setUpdating(true);
 
     try {
@@ -118,7 +166,14 @@ export default function AuctionsPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(editFormData),
+        body: JSON.stringify({
+          name: editFormData.name,
+          sport: finalSport,
+          maxTeams: editFormData.maxTeams,
+          maxPlayersPerTeam: editFormData.maxPlayersPerTeam,
+          minPlayersPerTeam: editFormData.minPlayersPerTeam,
+          minPlayerPrice: editFormData.minPlayerPrice,
+        }),
       });
 
       if (response.ok) {
@@ -159,7 +214,7 @@ export default function AuctionsPage() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">Auction Management</h1>
-          <p className="text-muted-foreground">Create and manage your cricket auctions</p>
+          <p className="text-muted-foreground">Create and manage your sports auctions</p>
         </div>
 
         <div className="flex gap-3">
@@ -171,7 +226,7 @@ export default function AuctionsPage() {
             <DialogHeader>
               <DialogTitle>Create New Auction</DialogTitle>
               <DialogDescription>
-                Set up a new cricket player auction
+                Set up a new sports player auction
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreateAuction} className="space-y-4">
@@ -185,6 +240,36 @@ export default function AuctionsPage() {
                   required
                 />
               </div>
+              <div>
+                <Label htmlFor="sport">Sport</Label>
+                <Select
+                  value={formData.sport}
+                  onValueChange={(value) => setFormData({ ...formData, sport: value })}
+                >
+                  <SelectTrigger id="sport">
+                    <SelectValue placeholder="Select a sport" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SPORT_OPTIONS.map((sport) => (
+                      <SelectItem key={sport} value={sport}>
+                        {sport}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {formData.sport === "Other" && (
+                <div>
+                  <Label htmlFor="customSport">Enter Sport Name</Label>
+                  <Input
+                    id="customSport"
+                    placeholder="e.g., Basketball, Hockey"
+                    value={formData.customSport}
+                    onChange={(e) => setFormData({ ...formData, customSport: e.target.value })}
+                    required
+                  />
+                </div>
+              )}
               <div>
                 <Label htmlFor="maxTeams">Maximum Teams</Label>
                 <Input
@@ -271,6 +356,36 @@ export default function AuctionsPage() {
                   required
                 />
               </div>
+              <div>
+                <Label htmlFor="edit-sport">Sport</Label>
+                <Select
+                  value={editFormData.sport}
+                  onValueChange={(value) => setEditFormData({ ...editFormData, sport: value })}
+                >
+                  <SelectTrigger id="edit-sport">
+                    <SelectValue placeholder="Select a sport" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SPORT_OPTIONS.map((sport) => (
+                      <SelectItem key={sport} value={sport}>
+                        {sport}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {editFormData.sport === "Other" && (
+                <div>
+                  <Label htmlFor="edit-customSport">Enter Sport Name</Label>
+                  <Input
+                    id="edit-customSport"
+                    placeholder="e.g., Basketball, Hockey"
+                    value={editFormData.customSport}
+                    onChange={(e) => setEditFormData({ ...editFormData, customSport: e.target.value })}
+                    required
+                  />
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="edit-maxTeams">Maximum Teams</Label>
@@ -368,9 +483,14 @@ export default function AuctionsPage() {
                         <Pencil className="h-4 w-4" />
                       </Button>
                     </div>
-                    <Badge className={getStatusColor(auction.status)}>
-                      {auction.status.replace("_", " ")}
-                    </Badge>
+                    <div className="flex gap-2 mb-2">
+                      <Badge variant="outline" className="bg-blue-50">
+                        {auction.sport}
+                      </Badge>
+                      <Badge className={getStatusColor(auction.status)}>
+                        {auction.status.replace("_", " ")}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
               </CardHeader>

@@ -50,6 +50,7 @@ export async function GET() {
       return {
         id: auction.id,
         name: auction.name,
+        sport: auction.sport,
         status: auction.status,
         totalTeams: auction.teams.length,
         totalPlayers,

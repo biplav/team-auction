@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, maxTeams, maxPlayersPerTeam, minPlayersPerTeam, minPlayerPrice } = body;
+    const { name, sport, maxTeams, maxPlayersPerTeam, minPlayersPerTeam, minPlayerPrice } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
     const auction = await prisma.auction.create({
       data: {
         name,
+        sport: sport || "Cricket",
         maxTeams: maxTeams || 8,
         maxPlayersPerTeam: maxPlayersPerTeam || 15,
         minPlayersPerTeam: minPlayersPerTeam || 11,

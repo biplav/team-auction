@@ -68,13 +68,16 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { status, currentPlayerId, name, maxTeams, maxPlayersPerTeam, minPlayersPerTeam, minPlayerPrice } = body;
+    const { status, currentPlayerId, name, sport, maxTeams, maxPlayersPerTeam, minPlayersPerTeam, minPlayerPrice } = body;
 
     const updateData: any = {};
 
     // Update auction settings
     if (name !== undefined) {
       updateData.name = name;
+    }
+    if (sport !== undefined) {
+      updateData.sport = sport;
     }
     if (maxTeams !== undefined) {
       updateData.maxTeams = maxTeams;

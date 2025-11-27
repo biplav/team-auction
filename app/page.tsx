@@ -25,6 +25,7 @@ import {
 interface PublicAuction {
   id: string;
   name: string;
+  sport: string;
   status: "DRAFT" | "UPCOMING" | "IN_PROGRESS" | "COMPLETED";
   totalTeams: number;
   totalPlayers: number;
@@ -211,11 +212,16 @@ export default function Home() {
                       <Card key={auction.id} className="border-2 border-green-200 hover:shadow-lg transition-shadow">
                         <CardHeader>
                           <div className="flex justify-between items-start mb-2">
-                            <CardTitle className="text-xl">{auction.name}</CardTitle>
+                            <div className="flex-1">
+                              <CardTitle className="text-xl mb-1">{auction.name}</CardTitle>
+                              <Badge variant="outline" className="bg-purple-50 text-purple-700">
+                                {auction.sport}
+                              </Badge>
+                            </div>
                             {getStatusBadge(auction.status)}
                           </div>
                           {auction.currentPlayer && (
-                            <CardDescription className="text-base">
+                            <CardDescription className="text-base mt-2">
                               <strong>Current:</strong> {auction.currentPlayer.name}
                               <br />
                               <span className="text-xs">{auction.currentPlayer.role}</span>
@@ -271,7 +277,12 @@ export default function Home() {
                       <Card key={auction.id} className="hover:shadow-lg transition-shadow">
                         <CardHeader>
                           <div className="flex justify-between items-start mb-2">
-                            <CardTitle className="text-xl">{auction.name}</CardTitle>
+                            <div className="flex-1">
+                              <CardTitle className="text-xl mb-1">{auction.name}</CardTitle>
+                              <Badge variant="outline" className="bg-purple-50 text-purple-700">
+                                {auction.sport}
+                              </Badge>
+                            </div>
                             {getStatusBadge(auction.status)}
                           </div>
                         </CardHeader>

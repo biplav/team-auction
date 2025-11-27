@@ -124,6 +124,7 @@ model Player {
 model Auction {
   id             String        @id @default(cuid())
   name           String
+  sport          String        @default("Cricket")
   status         AuctionStatus @default(NOT_STARTED)
 
   currentPlayerId String?
