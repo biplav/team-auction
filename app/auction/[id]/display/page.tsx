@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import io, { Socket } from "socket.io-client";
+import confetti from "canvas-confetti";
 
 interface Player {
   id: string;
@@ -19,11 +20,21 @@ interface Player {
 interface Team {
   id: string;
   name: string;
+  logo: string | null;
+  color: string | null;
   initialBudget: number;
   remainingBudget: number;
   _count: {
     players: number;
   };
+}
+
+interface SoldPlayerData {
+  playerName: string;
+  playerRole: string;
+  teamName: string;
+  teamColor: string | null;
+  soldPrice: number;
 }
 
 interface Bid {
@@ -53,6 +64,8 @@ export default function AuctionDisplayPage() {
   const [bids, setBids] = useState<Bid[]>([]);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [loading, setLoading] = useState(true);
+  const [soldPlayer, setSoldPlayer] = useState<SoldPlayerData | null>(null);
+  const [showSoldAnimation, setShowSoldAnimation] = useState(false);
 
   useEffect(() => {
     fetchData(true); // Show loader on initial load
@@ -109,6 +122,50 @@ export default function AuctionDisplayPage() {
 
     socketInstance.on("player-sold", (data) => {
       console.log("Player sold:", data);
+
+      // Trigger sold animation
+      if (data.player && data.team) {
+        setSoldPlayer({
+          playerName: data.player.name,
+          playerRole: data.player.role,
+          teamName: data.team.name,
+          teamColor: data.team.color,
+          soldPrice: data.soldPrice,
+        });
+        setShowSoldAnimation(true);
+
+        // Fire confetti
+        const duration = 3000;
+        const end = Date.now() + duration;
+
+        (function frame() {
+          confetti({
+            particleCount: 2,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            colors: data.team.color ? [data.team.color] : undefined,
+          });
+          confetti({
+            particleCount: 2,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            colors: data.team.color ? [data.team.color] : undefined,
+          });
+
+          if (Date.now() < end) {
+            requestAnimationFrame(frame);
+          }
+        }());
+
+        // Hide animation after 4 seconds
+        setTimeout(() => {
+          setShowSoldAnimation(false);
+          setSoldPlayer(null);
+        }, 4000);
+      }
+
       fetchData(false); // Don't show loader on socket updates
     });
 
@@ -398,6 +455,108 @@ export default function AuctionDisplayPage() {
           </div>
         </div>
       </div>
+
+      {/* Sold Animation Overlay */}
+      {showSoldAnimation && soldPlayer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="relative w-full max-w-4xl mx-8">
+            {/* SOLD Banner */}
+            <div className="mb-8 animate-in slide-in-from-top duration-500">
+              <h1 className="text-9xl font-black text-center text-white drop-shadow-2xl tracking-wider">
+                🎊 SOLD! 🎊
+              </h1>
+            </div>
+
+            {/* Player & Team Card */}
+            <div
+              className="relative overflow-hidden rounded-3xl shadow-2xl animate-in zoom-in duration-700"
+              style={{
+                background: soldPlayer.teamColor
+                  ? `linear-gradient(135deg, ${soldPlayer.teamColor}22 0%, ${soldPlayer.teamColor}88 100%)`
+                  : "linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.6) 100%)",
+                border: soldPlayer.teamColor ? `4px solid ${soldPlayer.teamColor}` : "4px solid #3b82f6",
+              }}
+            >
+              <div className="p-12 bg-white/95 backdrop-blur">
+                {/* Player Name */}
+                <div className="mb-6 text-center animate-in slide-in-from-left duration-700 delay-300">
+                  <p className="text-2xl text-gray-600 mb-2 font-medium">Player</p>
+                  <h2 className="text-6xl font-black text-gray-900 mb-3">{soldPlayer.playerName}</h2>
+                  <Badge className="text-xl px-6 py-2 bg-gray-800 text-white">
+                    {soldPlayer.playerRole.replace("_", " ")}
+                  </Badge>
+                </div>
+
+                {/* Divider */}
+                <div className="my-8 border-t-4 border-gray-300"></div>
+
+                {/* Team & Price */}
+                <div className="grid grid-cols-2 gap-8 animate-in slide-in-from-right duration-700 delay-500">
+                  {/* Team */}
+                  <div className="text-center">
+                    <p className="text-2xl text-gray-600 mb-3 font-medium">Bought By</p>
+                    <div
+                      className="inline-block px-8 py-6 rounded-2xl text-white shadow-xl"
+                      style={{
+                        backgroundColor: soldPlayer.teamColor || "#3b82f6",
+                      }}
+                    >
+                      <h3 className="text-4xl font-black">{soldPlayer.teamName}</h3>
+                    </div>
+                  </div>
+
+                  {/* Price */}
+                  <div className="text-center">
+                    <p className="text-2xl text-gray-600 mb-3 font-medium">Final Price</p>
+                    <div className="inline-block px-8 py-6 rounded-2xl bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-xl">
+                      <PriceCountUp targetPrice={soldPlayer.soldPrice} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Decorative Elements */}
+              <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
+                <div className="absolute -top-20 -left-20 w-40 h-40 bg-white/20 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-white/20 rounded-full blur-3xl animate-pulse delay-300"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+// Price Count-Up Component
+function PriceCountUp({ targetPrice }: { targetPrice: number }) {
+  const [displayPrice, setDisplayPrice] = useState(0);
+
+  useEffect(() => {
+    const duration = 1500; // 1.5 seconds
+    const steps = 60;
+    const increment = targetPrice / steps;
+    const stepDuration = duration / steps;
+
+    let currentStep = 0;
+    const timer = setInterval(() => {
+      currentStep++;
+      if (currentStep >= steps) {
+        setDisplayPrice(targetPrice);
+        clearInterval(timer);
+      } else {
+        setDisplayPrice(Math.floor(increment * currentStep));
+      }
+    }, stepDuration);
+
+    return () => clearInterval(timer);
+  }, [targetPrice]);
+
+  const formatCurrency = (amount: number) => {
+    if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(2)}Cr`;
+    if (amount >= 100000) return `₹${(amount / 100000).toFixed(2)}L`;
+    return `₹${amount.toLocaleString()}`;
+  };
+
+  return <h3 className="text-5xl font-black">{formatCurrency(displayPrice)}</h3>;
 }

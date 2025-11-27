@@ -259,11 +259,20 @@ export default function ConductAuctionPage() {
       });
 
       if (res.ok) {
+        const soldTeam = teams.find(t => t.id === teamId);
         socket?.emit("player-sold", {
           auctionId,
-          playerId: currentPlayer.id,
-          teamId,
-          amount,
+          player: {
+            id: currentPlayer.id,
+            name: currentPlayer.name,
+            role: currentPlayer.role,
+          },
+          team: {
+            id: teamId,
+            name: soldTeam?.name || "Unknown Team",
+            color: soldTeam?.color || null,
+          },
+          soldPrice: amount,
         });
 
         await fetchData(false); // Don't show loader when selling player
