@@ -514,56 +514,6 @@ export default function BiddingPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Statement</CardTitle>
-                <CardDescription>Your team's spending breakdown</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {myTeam.players && myTeam.players.length > 0 ? (
-                  <div className="space-y-4">
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {myTeam.players.map((player: any, index: number) => (
-                        <div
-                          key={player.id}
-                          className="flex justify-between items-center p-2 bg-gray-50 rounded-lg"
-                        >
-                          <div className="flex-1">
-                            <p className="font-semibold text-sm">{player.name}</p>
-                            <p className="text-xs text-gray-600">{player.role.replace("_", " ")}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold text-sm">
-                              {player.soldPrice ? formatCurrency(player.soldPrice) : "N/A"}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="border-t pt-3 mt-3">
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="text-sm text-gray-600">Total Spent</p>
-                        <p className="text-lg font-bold text-red-600">
-                          {formatCurrency(myTeam.initialBudget - myTeam.remainingBudget)}
-                        </p>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <p className="text-sm text-gray-600">Remaining Budget</p>
-                        <p className="text-lg font-bold text-green-600">
-                          {formatCurrency(myTeam.remainingBudget)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-center text-gray-500 py-8">
-                    No players purchased yet
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
             {auction?.status === "IN_PROGRESS" && currentPlayer && currentPlayer.status !== "SOLD" && (
               <Card>
                 <CardHeader>
@@ -683,9 +633,11 @@ export default function BiddingPage() {
             <Card>
               <CardHeader>
                 <CardTitle>My Team: {myTeam.name}</CardTitle>
+                <CardDescription>Budget and squad overview</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  {/* Budget Summary */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-gray-600">Total Budget</p>
@@ -699,6 +651,7 @@ export default function BiddingPage() {
                     </div>
                   </div>
 
+                  {/* Squad Stats */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-blue-50 p-3 rounded-lg">
                       <p className="text-xs text-gray-600">Current Squad</p>
@@ -714,6 +667,7 @@ export default function BiddingPage() {
                     </div>
                   </div>
 
+                  {/* Budget Progress */}
                   <div>
                     <p className="text-sm text-gray-600 mb-2">Budget Used</p>
                     <div className="w-full bg-gray-200 rounded-full h-3">
@@ -725,6 +679,42 @@ export default function BiddingPage() {
                       ></div>
                     </div>
                   </div>
+
+                  {/* Players Purchased */}
+                  {myTeam.players && myTeam.players.length > 0 && (
+                    <>
+                      <div className="border-t pt-4 mt-4">
+                        <p className="text-sm font-semibold text-gray-700 mb-3">Players Purchased ({myTeam.players.length})</p>
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          {myTeam.players.map((player: any) => (
+                            <div
+                              key={player.id}
+                              className="flex justify-between items-center p-2 bg-gray-50 rounded-lg"
+                            >
+                              <div className="flex-1">
+                                <p className="font-semibold text-sm">{player.name}</p>
+                                <p className="text-xs text-gray-600">{player.role.replace("_", " ")}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-sm">
+                                  {player.soldPrice ? formatCurrency(player.soldPrice) : "N/A"}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="border-t pt-3">
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm text-gray-600">Total Spent</p>
+                          <p className="text-lg font-bold text-red-600">
+                            {formatCurrency(myTeam.initialBudget - myTeam.remainingBudget)}
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
