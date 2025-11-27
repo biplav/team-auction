@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import io, { Socket } from "socket.io-client";
 import confetti from "canvas-confetti";
 
@@ -17,6 +18,13 @@ interface Player {
   stats: any;
 }
 
+interface TeamPlayer {
+  id: string;
+  name: string;
+  role: string;
+  soldPrice: number | null;
+}
+
 interface Team {
   id: string;
   name: string;
@@ -27,6 +35,7 @@ interface Team {
   _count: {
     players: number;
   };
+  players?: TeamPlayer[];
 }
 
 interface SoldPlayerData {
@@ -66,6 +75,8 @@ export default function AuctionDisplayPage() {
   const [loading, setLoading] = useState(true);
   const [soldPlayer, setSoldPlayer] = useState<SoldPlayerData | null>(null);
   const [showSoldAnimation, setShowSoldAnimation] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [loadingTeamPlayers, setLoadingTeamPlayers] = useState(false);
 
   useEffect(() => {
     fetchData(true); // Show loader on initial load
@@ -247,6 +258,31 @@ export default function AuctionDisplayPage() {
     }
   };
 
+  const fetchTeamPlayers = async (team: Team) => {
+    if (team.players && team.players.length > 0) {
+      // Already have players data
+      setSelectedTeam(team);
+      return;
+    }
+
+    setLoadingTeamPlayers(true);
+    try {
+      const res = await fetch(`/api/teams/${team.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        const teamWithPlayers = { ...team, players: data.players || [] };
+        setSelectedTeam(teamWithPlayers);
+
+        // Update teams array with player data
+        setTeams(teams.map(t => t.id === team.id ? teamWithPlayers : t));
+      }
+    } catch (error) {
+      console.error("Error fetching team players:", error);
+    } finally {
+      setLoadingTeamPlayers(false);
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -421,9 +457,56 @@ export default function AuctionDisplayPage() {
                           </span>
                           <span className="font-bold text-lg">{team.name}</span>
                         </div>
-                        <Badge variant="outline" className="text-sm">
-                          {team._count.players} players
-                        </Badge>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Badge
+                              variant="outline"
+                              className="text-sm cursor-pointer hover:bg-gray-100 transition-colors"
+                              onClick={() => fetchTeamPlayers(team)}
+                            >
+                              {team._count.players} players
+                            </Badge>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-md">
+                            <DialogHeader>
+                              <DialogTitle>{team.name} - Squad</DialogTitle>
+                            </DialogHeader>
+                            <div className="mt-4">
+                              {loadingTeamPlayers ? (
+                                <div className="text-center py-8 text-gray-500">
+                                  Loading players...
+                                </div>
+                              ) : selectedTeam?.id === team.id && selectedTeam?.players ? (
+                                selectedTeam.players.length > 0 ? (
+                                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                                    {selectedTeam.players.map((player) => (
+                                      <div
+                                        key={player.id}
+                                        className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+                                      >
+                                        <div>
+                                          <p className="font-semibold">{player.name}</p>
+                                          <p className="text-xs text-gray-600">
+                                            {player.role.replace("_", " ")}
+                                          </p>
+                                        </div>
+                                        <div className="text-right">
+                                          <p className="font-bold text-sm">
+                                            {player.soldPrice ? formatCurrency(player.soldPrice) : "N/A"}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-8 text-gray-500">
+                                    No players purchased yet
+                                  </div>
+                                )
+                              ) : null}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                       </div>
                       <div className="mt-2">
                         <div className="flex justify-between text-sm mb-1">
