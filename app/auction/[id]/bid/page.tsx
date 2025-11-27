@@ -49,6 +49,7 @@ interface Auction {
   status: string;
   currentPlayerId: string | null;
   minPlayersPerTeam: number;
+  maxPlayersPerTeam: number;
   minPlayerPrice: number;
   teams?: Team[];
 }
@@ -368,8 +369,13 @@ export default function BiddingPage() {
   const highestBid = bids.length > 0 ? bids[0] : null;
   const isMyBidHighest = highestBid && myTeam && highestBid.team.id === myTeam.id;
 
-  // Check if team can afford current player
+  // Check if team has reached maximum squad size
   const currentPlayerCount = myTeam?.players?.length || 0;
+  const hasReachedMaxPlayers = auction && typeof auction.maxPlayersPerTeam === 'number'
+    ? currentPlayerCount >= auction.maxPlayersPerTeam
+    : false;
+
+  // Check if team can afford current player
   const affordabilityCheck = auction && myTeam && currentPlayer &&
     typeof auction.minPlayersPerTeam === 'number' &&
     typeof auction.minPlayerPrice === 'number'
@@ -598,7 +604,21 @@ export default function BiddingPage() {
                       </p>
                     </div>
 
-                    {!affordabilityCheck.canAfford && affordabilityCheck.reason && (
+                    {hasReachedMaxPlayers && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-3">
+                        <div className="flex items-start gap-3">
+                          <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="font-semibold text-red-900 mb-1">Squad Full</p>
+                            <p className="text-sm text-red-700">
+                              Your team has reached the maximum squad size of {auction?.maxPlayersPerTeam} players. You cannot bid on more players.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {!hasReachedMaxPlayers && !affordabilityCheck.canAfford && affordabilityCheck.reason && (
                       <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-3">
                         <div className="flex items-start gap-3">
                           <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
@@ -632,10 +652,12 @@ export default function BiddingPage() {
                       onClick={placeBid}
                       className="w-full"
                       size="lg"
-                      disabled={submitting || !currentPlayer || !affordabilityCheck.canAfford || bidAmount > maxAllowableBid}
+                      disabled={submitting || !currentPlayer || hasReachedMaxPlayers || !affordabilityCheck.canAfford || bidAmount > maxAllowableBid}
                     >
                       {submitting
                         ? "Placing Bid..."
+                        : hasReachedMaxPlayers
+                        ? "Squad Full - Cannot Bid"
                         : !affordabilityCheck.canAfford
                         ? "Cannot Afford Player"
                         : `Place Bid - ${formatCurrency(bidAmount)}`}

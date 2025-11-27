@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
         auction: {
           select: {
             minPlayersPerTeam: true,
+            maxPlayersPerTeam: true,
             minPlayerPrice: true,
           },
         },
@@ -43,6 +44,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Team not found" }, { status: 404 });
     }
 
+    // Check if team has reached maximum squad size
+    const currentPlayerCount = team._count.players;
+    if (currentPlayerCount >= team.auction.maxPlayersPerTeam) {
+      return NextResponse.json(
+        {
+          error: `Your team has reached the maximum squad size of ${team.auction.maxPlayersPerTeam} players. You cannot bid on more players.`
+        },
+        { status: 400 }
+      );
+    }
+
     // Check basic budget
     if (team.remainingBudget < amount) {
       return NextResponse.json(
@@ -52,7 +64,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if bid would leave enough budget for minimum squad requirements
-    const currentPlayerCount = team._count.players;
     const remainingRequiredPlayers = Math.max(
       0,
       team.auction.minPlayersPerTeam - currentPlayerCount - 1

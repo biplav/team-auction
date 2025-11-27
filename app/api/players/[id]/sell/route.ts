@@ -45,10 +45,32 @@ export async function POST(
 
     const team = await prisma.team.findUnique({
       where: { id: teamId },
+      include: {
+        auction: {
+          select: {
+            maxPlayersPerTeam: true,
+          },
+        },
+        _count: {
+          select: {
+            players: true,
+          },
+        },
+      },
     });
 
     if (!team) {
       return NextResponse.json({ error: "Team not found" }, { status: 404 });
+    }
+
+    // Check if team has reached maximum squad size
+    if (team._count.players >= team.auction.maxPlayersPerTeam) {
+      return NextResponse.json(
+        {
+          error: `${team.name} has reached the maximum squad size of ${team.auction.maxPlayersPerTeam} players. Cannot sell more players to this team.`,
+        },
+        { status: 400 }
+      );
     }
 
     // Verify there are active bids for this player
