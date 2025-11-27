@@ -68,7 +68,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { status, currentPlayerId, name, sport, maxTeams, maxPlayersPerTeam, minPlayersPerTeam, minPlayerPrice } = body;
+    const { status, currentPlayerId, name, sport, maxTeams, maxPlayersPerTeam, minPlayersPerTeam, minPlayerPrice, minBidIncrement } = body;
 
     const updateData: any = {};
 
@@ -90,6 +90,9 @@ export async function PATCH(
     }
     if (minPlayerPrice !== undefined) {
       updateData.minPlayerPrice = minPlayerPrice;
+    }
+    if (minBidIncrement !== undefined) {
+      updateData.minBidIncrement = minBidIncrement;
     }
 
     // Update status and current player

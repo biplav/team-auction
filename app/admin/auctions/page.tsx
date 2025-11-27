@@ -21,6 +21,7 @@ interface Auction {
   maxPlayersPerTeam: number;
   minPlayersPerTeam: number;
   minPlayerPrice: number;
+  minBidIncrement: number;
   createdAt: string;
   _count: {
     teams: number;
@@ -53,6 +54,7 @@ export default function AuctionsPage() {
     maxPlayersPerTeam: 15,
     minPlayersPerTeam: 11,
     minPlayerPrice: 0,
+    minBidIncrement: 50000,
   });
   const [editFormData, setEditFormData] = useState({
     name: "",
@@ -62,6 +64,7 @@ export default function AuctionsPage() {
     maxPlayersPerTeam: 15,
     minPlayersPerTeam: 11,
     minPlayerPrice: 0,
+    minBidIncrement: 50000,
   });
 
   useEffect(() => {
@@ -105,6 +108,7 @@ export default function AuctionsPage() {
           maxPlayersPerTeam: formData.maxPlayersPerTeam,
           minPlayersPerTeam: formData.minPlayersPerTeam,
           minPlayerPrice: formData.minPlayerPrice,
+          minBidIncrement: formData.minBidIncrement,
         }),
       });
 
@@ -117,7 +121,8 @@ export default function AuctionsPage() {
           maxTeams: 8,
           maxPlayersPerTeam: 15,
           minPlayersPerTeam: 11,
-          minPlayerPrice: 0
+          minPlayerPrice: 0,
+          minBidIncrement: 50000,
         });
         fetchAuctions();
       } else {
@@ -143,6 +148,7 @@ export default function AuctionsPage() {
       maxPlayersPerTeam: auction.maxPlayersPerTeam,
       minPlayersPerTeam: auction.minPlayersPerTeam,
       minPlayerPrice: auction.minPlayerPrice,
+      minBidIncrement: auction.minBidIncrement,
     });
     setEditOpen(true);
   };
@@ -173,6 +179,7 @@ export default function AuctionsPage() {
           maxPlayersPerTeam: editFormData.maxPlayersPerTeam,
           minPlayersPerTeam: editFormData.minPlayersPerTeam,
           minPlayerPrice: editFormData.minPlayerPrice,
+          minBidIncrement: editFormData.minBidIncrement,
         }),
       });
 
@@ -324,6 +331,21 @@ export default function AuctionsPage() {
                   Minimum reserve price for any player (set to 0 for no minimum)
                 </p>
               </div>
+              <div>
+                <Label htmlFor="minBidIncrement">Minimum Bid Increment (₹)</Label>
+                <Input
+                  id="minBidIncrement"
+                  type="number"
+                  min="0"
+                  step="1000"
+                  value={formData.minBidIncrement}
+                  onChange={(e) => setFormData({ ...formData, minBidIncrement: parseInt(e.target.value) })}
+                  required
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Minimum amount by which bids must increase (e.g., ₹50,000)
+                </p>
+              </div>
               <div className="flex gap-2 justify-end">
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                   Cancel
@@ -440,6 +462,21 @@ export default function AuctionsPage() {
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Minimum reserve price for any player (set to 0 for no minimum)
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="edit-minBidIncrement">Minimum Bid Increment (₹)</Label>
+                <Input
+                  id="edit-minBidIncrement"
+                  type="number"
+                  min="0"
+                  step="1000"
+                  value={editFormData.minBidIncrement}
+                  onChange={(e) => setEditFormData({ ...editFormData, minBidIncrement: parseInt(e.target.value) })}
+                  required
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Minimum amount by which bids must increase (e.g., ₹50,000)
                 </p>
               </div>
               <div className="flex gap-2 justify-end">

@@ -86,6 +86,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get highest current bid for this player
+    const highestBid = await prisma.bid.findFirst({
+      where: { playerId },
+      orderBy: { amount: "desc" },
+    });
+
+    // Calculate minimum required bid
+    const minRequired = highestBid
+      ? highestBid.amount + player.auction.minBidIncrement
+      : player.basePrice;
+
+    if (amount < minRequired) {
+      const formatCurrency = (amt: number) => {
+        if (amt >= 10000000) return `₹${(amt / 10000000).toFixed(2)}Cr`;
+        if (amt >= 100000) return `₹${(amt / 100000).toFixed(2)}L`;
+        return `₹${amt.toLocaleString()}`;
+      };
+
+      return NextResponse.json(
+        {
+          error: highestBid
+            ? `Bid must be at least ${formatCurrency(minRequired)} (current highest: ${formatCurrency(highestBid.amount)} + increment: ${formatCurrency(player.auction.minBidIncrement)})`
+            : `Bid must be at least the base price of ${formatCurrency(minRequired)}`,
+        },
+        { status: 400 }
+      );
+    }
+
     // Create bid
     const bid = await prisma.bid.create({
       data: {

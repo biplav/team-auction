@@ -136,6 +136,7 @@ model Auction {
   maxPlayersPerTeam Int           @default(15)
   minPlayersPerTeam Int           @default(11)
   minPlayerPrice    Int           @default(0)
+  minBidIncrement   Int           @default(50000)
 
   teams          Team[]
   players        Player[]       @relation("AuctionPlayers")
