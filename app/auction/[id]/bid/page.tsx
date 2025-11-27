@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Minus, AlertTriangle } from "lucide-react";
 import io, { Socket } from "socket.io-client";
 import { canAffordPlayer, formatCurrency as formatCurrencyUtil } from "@/lib/budget";
+import confetti from "canvas-confetti";
 
 interface Player {
   id: string;
@@ -50,6 +51,14 @@ interface Auction {
   minPlayerPrice: number;
 }
 
+interface SoldPlayerData {
+  playerName: string;
+  playerRole: string;
+  teamName: string;
+  teamColor: string | null;
+  soldPrice: number;
+}
+
 export default function BiddingPage() {
   const params = useParams();
   const auctionId = params.id as string;
@@ -63,6 +72,8 @@ export default function BiddingPage() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [soldPlayer, setSoldPlayer] = useState<SoldPlayerData | null>(null);
+  const [showSoldAnimation, setShowSoldAnimation] = useState(false);
 
   const bidIncrement = 50000; // 50k increment
 
@@ -103,6 +114,50 @@ export default function BiddingPage() {
 
     socketInstance.on("player-sold", (data) => {
       console.log("Player sold:", data);
+
+      // Trigger sold animation
+      if (data.player && data.team) {
+        setSoldPlayer({
+          playerName: data.player.name,
+          playerRole: data.player.role,
+          teamName: data.team.name,
+          teamColor: data.team.color,
+          soldPrice: data.soldPrice,
+        });
+        setShowSoldAnimation(true);
+
+        // Fire confetti
+        const duration = 3000;
+        const end = Date.now() + duration;
+
+        (function frame() {
+          confetti({
+            particleCount: 2,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            colors: data.team.color ? [data.team.color] : undefined,
+          });
+          confetti({
+            particleCount: 2,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            colors: data.team.color ? [data.team.color] : undefined,
+          });
+
+          if (Date.now() < end) {
+            requestAnimationFrame(frame);
+          }
+        }());
+
+        // Hide animation after 4 seconds
+        setTimeout(() => {
+          setShowSoldAnimation(false);
+          setSoldPlayer(null);
+        }, 4000);
+      }
+
       fetchData(false); // Don't show loader on socket updates
     });
 
@@ -382,33 +437,65 @@ export default function BiddingPage() {
                 {currentPlayer ? (
                   <div className="space-y-4">
                     <div>
-                      <h2 className="text-3xl font-bold mb-2">{currentPlayer.name}</h2>
+                      <div className="flex items-center gap-3 mb-2">
+                        <h2 className="text-3xl font-bold">{currentPlayer.name}</h2>
+                        {currentPlayer.status === "SOLD" && (
+                          <Badge className="bg-green-600 text-white">SOLD</Badge>
+                        )}
+                      </div>
                       <Badge>{currentPlayer.role.replace("_", " ")}</Badge>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-blue-50 p-4 rounded-lg">
-                        <p className="text-sm text-gray-600">Base Price</p>
-                        <p className="text-xl font-bold text-blue-900">
-                          {formatCurrency(currentPlayer.basePrice)}
-                        </p>
+                    {currentPlayer.status === "SOLD" && currentPlayer.teamId ? (
+                      <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <p className="font-semibold text-green-900 text-lg">Player Already Sold</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm text-gray-600">Bought By</p>
+                            <p className="text-xl font-bold text-green-900">
+                              {auction?.teams?.find((t: any) => t.id === currentPlayer.teamId)?.name || "Unknown Team"}
+                              {currentPlayer.teamId === myTeam.id && (
+                                <span className="text-sm ml-2">(Your Team!)</span>
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600">Sold Price</p>
+                            <p className="text-xl font-bold text-green-900">
+                              {currentPlayer.soldPrice ? formatCurrency(currentPlayer.soldPrice) : "N/A"}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="bg-green-50 p-4 rounded-lg">
-                        <p className="text-sm text-gray-600">Current Bid</p>
-                        <p className="text-xl font-bold text-green-900">
-                          {highestBid ? formatCurrency(highestBid.amount) : "No bids"}
-                        </p>
-                      </div>
-                    </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600">Base Price</p>
+                            <p className="text-xl font-bold text-blue-900">
+                              {formatCurrency(currentPlayer.basePrice)}
+                            </p>
+                          </div>
+                          <div className="bg-green-50 p-4 rounded-lg">
+                            <p className="text-sm text-gray-600">Current Bid</p>
+                            <p className="text-xl font-bold text-green-900">
+                              {highestBid ? formatCurrency(highestBid.amount) : "No bids"}
+                            </p>
+                          </div>
+                        </div>
 
-                    {highestBid && (
-                      <div className={`p-3 rounded-lg ${isMyBidHighest ? "bg-green-100" : "bg-gray-100"}`}>
-                        <p className="text-sm text-gray-600">Highest Bidder</p>
-                        <p className="font-semibold">
-                          {highestBid.team.name}
-                          {isMyBidHighest && <span className="ml-2 text-green-600">(You)</span>}
-                        </p>
-                      </div>
+                        {highestBid && (
+                          <div className={`p-3 rounded-lg ${isMyBidHighest ? "bg-green-100" : "bg-gray-100"}`}>
+                            <p className="text-sm text-gray-600">Highest Bidder</p>
+                            <p className="font-semibold">
+                              {highestBid.team.name}
+                              {isMyBidHighest && <span className="ml-2 text-green-600">(You)</span>}
+                            </p>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 ) : (
@@ -419,7 +506,57 @@ export default function BiddingPage() {
               </CardContent>
             </Card>
 
-            {auction?.status === "IN_PROGRESS" && currentPlayer && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Account Statement</CardTitle>
+                <CardDescription>Your team's spending breakdown</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {myTeam.players && myTeam.players.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {myTeam.players.map((player: any, index: number) => (
+                        <div
+                          key={player.id}
+                          className="flex justify-between items-center p-2 bg-gray-50 rounded-lg"
+                        >
+                          <div className="flex-1">
+                            <p className="font-semibold text-sm">{player.name}</p>
+                            <p className="text-xs text-gray-600">{player.role.replace("_", " ")}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-sm">
+                              {player.soldPrice ? formatCurrency(player.soldPrice) : "N/A"}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="border-t pt-3 mt-3">
+                      <div className="flex justify-between items-center mb-2">
+                        <p className="text-sm text-gray-600">Total Spent</p>
+                        <p className="text-lg font-bold text-red-600">
+                          {formatCurrency(myTeam.initialBudget - myTeam.remainingBudget)}
+                        </p>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-gray-600">Remaining Budget</p>
+                        <p className="text-lg font-bold text-green-600">
+                          {formatCurrency(myTeam.remainingBudget)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-center text-gray-500 py-8">
+                    No players purchased yet
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {auction?.status === "IN_PROGRESS" && currentPlayer && currentPlayer.status !== "SOLD" && (
               <Card>
                 <CardHeader>
                   <CardTitle>Place Your Bid</CardTitle>
@@ -619,6 +756,108 @@ export default function BiddingPage() {
           </div>
         </div>
       </div>
+
+      {/* Sold Animation Overlay */}
+      {showSoldAnimation && soldPlayer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="relative w-full max-w-4xl mx-8">
+            {/* SOLD Banner */}
+            <div className="mb-8 animate-in slide-in-from-top duration-500">
+              <h1 className="text-9xl font-black text-center text-white drop-shadow-2xl tracking-wider">
+                🎊 SOLD! 🎊
+              </h1>
+            </div>
+
+            {/* Player & Team Card */}
+            <div
+              className="relative overflow-hidden rounded-3xl shadow-2xl animate-in zoom-in duration-700"
+              style={{
+                background: soldPlayer.teamColor
+                  ? `linear-gradient(135deg, ${soldPlayer.teamColor}22 0%, ${soldPlayer.teamColor}88 100%)`
+                  : "linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.6) 100%)",
+                border: soldPlayer.teamColor ? `4px solid ${soldPlayer.teamColor}` : "4px solid #3b82f6",
+              }}
+            >
+              <div className="p-12 bg-white/95 backdrop-blur">
+                {/* Player Name */}
+                <div className="mb-6 text-center animate-in slide-in-from-left duration-700 delay-300">
+                  <p className="text-2xl text-gray-600 mb-2 font-medium">Player</p>
+                  <h2 className="text-6xl font-black text-gray-900 mb-3">{soldPlayer.playerName}</h2>
+                  <Badge className="text-xl px-6 py-2 bg-gray-800 text-white">
+                    {soldPlayer.playerRole.replace("_", " ")}
+                  </Badge>
+                </div>
+
+                {/* Divider */}
+                <div className="my-8 border-t-4 border-gray-300"></div>
+
+                {/* Team & Price */}
+                <div className="grid grid-cols-2 gap-8 animate-in slide-in-from-right duration-700 delay-500">
+                  {/* Team */}
+                  <div className="text-center">
+                    <p className="text-2xl text-gray-600 mb-3 font-medium">Bought By</p>
+                    <div
+                      className="inline-block px-8 py-6 rounded-2xl text-white shadow-xl"
+                      style={{
+                        backgroundColor: soldPlayer.teamColor || "#3b82f6",
+                      }}
+                    >
+                      <h3 className="text-4xl font-black">{soldPlayer.teamName}</h3>
+                    </div>
+                  </div>
+
+                  {/* Price */}
+                  <div className="text-center">
+                    <p className="text-2xl text-gray-600 mb-3 font-medium">Final Price</p>
+                    <div className="inline-block px-8 py-6 rounded-2xl bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-xl">
+                      <PriceCountUp targetPrice={soldPlayer.soldPrice} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Decorative Elements */}
+              <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
+                <div className="absolute -top-20 -left-20 w-40 h-40 bg-white/20 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-white/20 rounded-full blur-3xl animate-pulse delay-300"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+// Price Count-Up Component
+function PriceCountUp({ targetPrice }: { targetPrice: number }) {
+  const [displayPrice, setDisplayPrice] = useState(0);
+
+  useEffect(() => {
+    const duration = 1500; // 1.5 seconds
+    const steps = 60;
+    const increment = targetPrice / steps;
+    const stepDuration = duration / steps;
+
+    let currentStep = 0;
+    const timer = setInterval(() => {
+      currentStep++;
+      if (currentStep >= steps) {
+        setDisplayPrice(targetPrice);
+        clearInterval(timer);
+      } else {
+        setDisplayPrice(Math.floor(increment * currentStep));
+      }
+    }, stepDuration);
+
+    return () => clearInterval(timer);
+  }, [targetPrice]);
+
+  const formatCurrency = (amount: number) => {
+    if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(2)}Cr`;
+    if (amount >= 100000) return `₹${(amount / 100000).toFixed(2)}L`;
+    return `₹${amount.toLocaleString()}`;
+  };
+
+  return <h3 className="text-5xl font-black">{formatCurrency(displayPrice)}</h3>;
 }

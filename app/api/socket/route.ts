@@ -56,9 +56,17 @@ io.on("connection", (socket) => {
 
   socket.on("player-sold", (data: {
     auctionId: string;
-    playerId: string;
-    teamId: string;
-    amount: number;
+    player: {
+      id: string;
+      name: string;
+      role: string;
+    };
+    team: {
+      id: string;
+      name: string;
+      color: string | null;
+    };
+    soldPrice: number;
   }) => {
     console.log("Player sold:", data);
     io.to(`auction:${data.auctionId}`).emit("player-sold", data);
