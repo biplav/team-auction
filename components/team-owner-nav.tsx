@@ -16,7 +16,7 @@ export function TeamOwnerNav() {
           <div className="flex items-center">
             <Link href="/team-owner/dashboard" className="flex items-center">
               <span className="text-xl font-bold text-gray-900">
-                Cricket Auction
+                Sports Auction
               </span>
             </Link>
           </div>

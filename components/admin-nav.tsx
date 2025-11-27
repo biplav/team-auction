@@ -15,7 +15,7 @@ export function AdminNav() {
           <div className="flex items-center">
             <Link href="/admin/auctions" className="flex items-center">
               <span className="text-xl font-bold text-gray-900">
-                Cricket Auction - Admin
+                Sports Auction - Admin
               </span>
             </Link>
           </div>
