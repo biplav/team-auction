@@ -56,7 +56,7 @@ export async function POST(
       where: { playerId: id },
       orderBy: [
         { amount: "desc" },
-        { createdAt: "desc" },
+        { createdAt: "asc" }, // First-come-first-served for same amount
       ],
       include: {
         team: {
