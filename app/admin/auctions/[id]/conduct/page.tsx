@@ -23,6 +23,7 @@ interface Player {
 interface Team {
   id: string;
   name: string;
+  color: string | null;
   initialBudget: number;
   remainingBudget: number;
   _count: {
