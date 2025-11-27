@@ -45,7 +45,7 @@ export default function SignInPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-slate-100">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Cricket Auction Platform</CardTitle>
+          <CardTitle className="text-2xl">Sports Auction Platform</CardTitle>
           <CardDescription>Sign in to manage your auctions</CardDescription>
         </CardHeader>
         <CardContent>

@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cricket Auction Platform",
-  description: "Professional cricket player auction management system",
+  title: "Sports Auction Platform",
+  description: "Professional sports player auction management system for leagues and tournaments",
 };
 
 export default function RootLayout({

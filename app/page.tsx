@@ -106,7 +106,7 @@ export default function Home() {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Gavel className="h-6 w-6 text-blue-600" />
-            <span className="text-xl font-bold">Cricket Auction</span>
+            <span className="text-xl font-bold">Sports Auction</span>
           </div>
           <div className="flex gap-3">
             {session?.user ? (
@@ -150,12 +150,12 @@ export default function Home() {
               Professional Auction Platform
             </Badge>
             <h1 className="text-6xl font-bold text-slate-900 mb-6 leading-tight">
-              Host Cricket Player
+              Host Sports Player
               <br />
               <span className="text-blue-600">Auctions in Real-Time</span>
             </h1>
             <p className="text-xl text-slate-600 mb-8 max-w-2xl mx-auto">
-              Complete auction management platform for cricket tournaments.
+              Complete auction management platform for sports leagues and tournaments.
               Real-time bidding, team management, analytics, and public display screens.
             </p>
             <div className="flex gap-4 justify-center flex-wrap">
@@ -319,7 +319,7 @@ export default function Home() {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-4xl font-bold text-slate-900 mb-4">How It Works</h2>
-              <p className="text-lg text-slate-600">Three simple steps to run your cricket auction</p>
+              <p className="text-lg text-slate-600">Three simple steps to run your sports auction</p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8">
@@ -376,7 +376,7 @@ export default function Home() {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-4xl font-bold text-slate-900 mb-4">Powerful Features</h2>
-              <p className="text-lg text-slate-600">Everything you need to run professional cricket auctions</p>
+              <p className="text-lg text-slate-600">Everything you need to run professional sports auctions</p>
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -461,7 +461,7 @@ export default function Home() {
             <Card className="max-w-3xl mx-auto bg-gradient-to-r from-blue-50 to-purple-50 border-2">
               <CardContent className="py-12">
                 <h2 className="text-3xl font-bold text-slate-900 mb-4">
-                  Ready to host your cricket auction?
+                  Ready to host your sports auction?
                 </h2>
                 <p className="text-lg text-slate-600 mb-6">
                   Sign in to create your first auction in minutes
@@ -485,10 +485,10 @@ export default function Home() {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <Gavel className="h-5 w-5 text-blue-600" />
-                <span className="font-bold">Cricket Auction</span>
+                <span className="font-bold">Sports Auction</span>
               </div>
               <p className="text-sm text-slate-600">
-                Professional auction management platform for cricket tournaments.
+                Professional auction management platform for sports leagues and tournaments.
               </p>
             </div>
             <div>
@@ -514,7 +514,7 @@ export default function Home() {
             </div>
           </div>
           <div className="text-center text-sm text-slate-500 pt-8 border-t">
-            <p>&copy; {new Date().getFullYear()} Cricket Auction Platform. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} Sports Auction Platform. All rights reserved.</p>
           </div>
         </div>
       </footer>
