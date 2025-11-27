@@ -21,6 +21,7 @@ interface Player {
   soldPrice: number | null;
   status: string;
   stats: any;
+  teamId: string | null;
 }
 
 interface Team {
@@ -49,6 +50,7 @@ interface Auction {
   currentPlayerId: string | null;
   minPlayersPerTeam: number;
   minPlayerPrice: number;
+  teams?: Team[];
 }
 
 interface SoldPlayerData {
