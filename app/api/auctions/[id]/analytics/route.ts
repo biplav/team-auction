@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Player, Team } from "@prisma/client";
+
+type PlayerWithTeam = Player & {
+  team: {
+    id: string;
+    name: string;
+  } | null;
+};
+
+type TeamWithPlayers = Team & {
+  players: Player[];
+};
 
 export async function GET(
   request: NextRequest,
@@ -70,21 +82,21 @@ export async function GET(
 
     // Calculate statistics
     const totalPlayers = players.length;
-    const soldPlayers = players.filter((p) => p.status === "SOLD").length;
-    const unsoldPlayers = players.filter((p) => p.status === "UNSOLD").length;
+    const soldPlayers = players.filter((p: PlayerWithTeam) => p.status === "SOLD").length;
+    const unsoldPlayers = players.filter((p: PlayerWithTeam) => p.status === "UNSOLD").length;
     const availablePlayers = totalPlayers - soldPlayers - unsoldPlayers;
 
     // Calculate total revenue
     const totalRevenue = players.reduce(
-      (sum, player) => sum + (player.soldPrice || 0),
+      (sum: number, player: PlayerWithTeam) => sum + (player.soldPrice || 0),
       0
     );
 
     // Player distribution by role
-    const roleDistribution = players.reduce((acc: any, player) => {
+    const roleDistribution = players.reduce((acc: Record<string, number>, player: PlayerWithTeam) => {
       acc[player.role] = (acc[player.role] || 0) + 1;
       return acc;
-    }, {});
+    }, {} as Record<string, number>);
 
     // Players by status
     const statusDistribution = {
@@ -94,7 +106,7 @@ export async function GET(
     };
 
     // Team statistics
-    const teamStats = teams.map((team) => {
+    const teamStats = teams.map((team: TeamWithPlayers) => {
       const teamPlayers = team.players;
       const totalSpent = team.initialBudget - team.remainingBudget;
       const avgPlayerPrice =
@@ -115,10 +127,10 @@ export async function GET(
 
     // Most expensive players
     const mostExpensivePlayers = players
-      .filter((p) => p.soldPrice !== null)
-      .sort((a, b) => (b.soldPrice || 0) - (a.soldPrice || 0))
+      .filter((p: PlayerWithTeam) => p.soldPrice !== null)
+      .sort((a: PlayerWithTeam, b: PlayerWithTeam) => (b.soldPrice || 0) - (a.soldPrice || 0))
       .slice(0, 10)
-      .map((p) => ({
+      .map((p: PlayerWithTeam) => ({
         id: p.id,
         name: p.name,
         role: p.role,
@@ -128,8 +140,8 @@ export async function GET(
 
     // Unsold players
     const unsoldPlayersList = players
-      .filter((p) => p.status === "UNSOLD")
-      .map((p) => ({
+      .filter((p: PlayerWithTeam) => p.status === "UNSOLD")
+      .map((p: PlayerWithTeam) => ({
         id: p.id,
         name: p.name,
         role: p.role,
@@ -145,7 +157,7 @@ export async function GET(
       "25L+": 0,
     };
 
-    players.forEach((player) => {
+    players.forEach((player: PlayerWithTeam) => {
       const price = player.soldPrice || 0;
       if (price === 0) return;
       if (price < 100000) priceRanges["0-1L"]++;
