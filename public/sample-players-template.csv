@@ -1,0 +1,16 @@
+Name,Phone Number,Role,Base Price,Batting Style,Bowling Style,Jersey Number,City
+Virat Kohli,9876543210,BATSMAN,5000000,Right-hand,Right-arm medium,18,Delhi
+Rohit Sharma,9876543211,BATSMAN,4500000,Right-hand,Right-arm off break,45,Mumbai
+Jasprit Bumrah,9876543212,BOWLER,4000000,Right-hand,Right-arm fast,93,Ahmedabad
+Ravindra Jadeja,9876543213,ALL_ROUNDER,3500000,Left-hand,Left-arm orthodox,8,Jamnagar
+MS Dhoni,9876543214,WICKET_KEEPER,3000000,Right-hand,Right-arm medium,7,Ranchi
+KL Rahul,9876543215,WICKET_KEEPER,3500000,Right-hand,Right-arm medium,1,Bangalore
+Hardik Pandya,9876543216,ALL_ROUNDER,3200000,Right-hand,Right-arm fast-medium,33,Baroda
+Rishabh Pant,9876543217,WICKET_KEEPER,3000000,Left-hand,NA,17,Delhi
+Shubman Gill,9876543218,BATSMAN,2500000,Right-hand,Right-arm off break,77,Punjab
+Mohammed Shami,9876543219,BOWLER,2800000,Right-hand,Right-arm fast,11,Amroha
+Yuzvendra Chahal,9876543220,BOWLER,2000000,Right-hand,Right-arm leg break,3,Haryana
+Axar Patel,9876543221,ALL_ROUNDER,2200000,Left-hand,Left-arm orthodox,20,Gujarat
+Shreyas Iyer,9876543222,BATSMAN,2400000,Right-hand,Right-arm off break,41,Mumbai
+Ishan Kishan,9876543223,WICKET_KEEPER,2300000,Left-hand,NA,32,Patna
+Suryakumar Yadav,9876543224,BATSMAN,2600000,Right-hand,Right-arm off break,63,Mumbai
