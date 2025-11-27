@@ -509,7 +509,7 @@ export default function Home() {
             <div>
               <h3 className="font-semibold mb-4">Platform</h3>
               <p className="text-sm text-slate-600">
-                Built with Next.js, React, TypeScript, Prisma, and Socket.IO
+                Built with Next.js, React, TypeScript, Prisma, CockroachDB, and Socket.IO
               </p>
             </div>
           </div>
