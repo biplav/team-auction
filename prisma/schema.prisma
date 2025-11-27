@@ -111,11 +111,13 @@ model Player {
   team        Team?        @relation(fields: [teamId], references: [id])
 
   auctionId   String
-  auction     Auction      @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  auction     Auction      @relation("AuctionPlayers", fields: [auctionId], references: [id], onDelete: Cascade)
 
   bids        Bid[]
 
   stats       Json?
+
+  currentInAuctions Auction[] @relation("CurrentPlayer")
 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -128,6 +130,7 @@ model Auction {
   status         AuctionStatus @default(NOT_STARTED)
 
   currentPlayerId String?
+  currentPlayer   Player?       @relation("CurrentPlayer", fields: [currentPlayerId], references: [id])
 
   maxTeams          Int           @default(8)
   maxPlayersPerTeam Int           @default(15)
@@ -135,7 +138,7 @@ model Auction {
   minPlayerPrice    Int           @default(0)
 
   teams          Team[]
-  players        Player[]
+  players        Player[]       @relation("AuctionPlayers")
   bids           Bid[]
 
   createdAt      DateTime      @default(now())
