@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ArrowLeft, Play, Pause, SkipForward, Gavel, XCircle, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, Play, Pause, SkipForward, Gavel, XCircle, Trash2, Plus, Minus, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import io, { Socket } from "socket.io-client";
 import confetti from "canvas-confetti";
@@ -57,6 +60,7 @@ interface Auction {
   status: string;
   currentPlayerId: string | null;
   minPlayersPerTeam: number;
+  maxPlayersPerTeam: number;
   minPlayerPrice: number;
 }
 
@@ -83,9 +87,21 @@ export default function ConductAuctionPage() {
   const [showSoldAnimation, setShowSoldAnimation] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [loadingTeamPlayers, setLoadingTeamPlayers] = useState(false);
+  const [adminBidTeamId, setAdminBidTeamId] = useState<string>("");
+  const [adminBidAmount, setAdminBidAmount] = useState<number>(0);
+  const [placingAdminBid, setPlacingAdminBid] = useState(false);
 
   const unsoldPlayers = players.filter((p) => p.status === "UNSOLD");
   const soldPlayers = players.filter((p) => p.status === "SOLD");
+  const bidIncrement = 50000; // 50k increment
+
+  // Initialize admin bid amount when player or bids change
+  useEffect(() => {
+    if (currentPlayer && auction?.status === "IN_PROGRESS") {
+      const highestBidAmount = bids.length > 0 ? bids[0].amount : currentPlayer.basePrice;
+      setAdminBidAmount(highestBidAmount + bidIncrement);
+    }
+  }, [currentPlayer, bids, auction?.status]);
 
   useEffect(() => {
     fetchData(true); // Show loader on initial load
@@ -449,6 +465,93 @@ export default function ConductAuctionPage() {
     }
   };
 
+  const placeAdminBid = async () => {
+    if (!adminBidTeamId || !currentPlayer || !adminBidAmount || !auction) {
+      alert("Please select a team and enter a bid amount");
+      return;
+    }
+
+    const selectedTeam = teams.find(t => t.id === adminBidTeamId);
+    if (!selectedTeam) {
+      alert("Selected team not found");
+      return;
+    }
+
+    // Check if team has reached maximum squad size
+    const currentPlayerCount = selectedTeam._count.players;
+    if (currentPlayerCount >= auction.maxPlayersPerTeam) {
+      alert(`${selectedTeam.name} has reached the maximum squad size of ${auction.maxPlayersPerTeam} players. Cannot bid on more players.`);
+      return;
+    }
+
+    // Calculate remaining required players and max allowable bid
+    const remainingRequiredPlayers = Math.max(0, auction.minPlayersPerTeam - currentPlayerCount - 1);
+    const maxAllowableBid = selectedTeam.remainingBudget - (remainingRequiredPlayers * auction.minPlayerPrice);
+
+    // Check if bid exceeds maximum allowable amount
+    if (adminBidAmount > maxAllowableBid) {
+      const reserved = remainingRequiredPlayers * auction.minPlayerPrice;
+      alert(`Maximum allowable bid for ${selectedTeam.name} is ${formatCurrency(maxAllowableBid)}. The team needs to reserve ${formatCurrency(reserved)} for ${remainingRequiredPlayers} more player(s) to meet minimum squad size.`);
+      return;
+    }
+
+    // Check basic budget
+    if (adminBidAmount > selectedTeam.remainingBudget) {
+      alert(`${selectedTeam.name} has insufficient budget. Available: ${formatCurrency(selectedTeam.remainingBudget)}`);
+      return;
+    }
+
+    // Check if bid is higher than current highest bid
+    const highestBidAmount = bids.length > 0 ? bids[0].amount : currentPlayer.basePrice;
+    if (adminBidAmount <= highestBidAmount) {
+      alert(`Bid must be higher than the current highest bid of ${formatCurrency(highestBidAmount)}`);
+      return;
+    }
+
+    setPlacingAdminBid(true);
+
+    try {
+      const res = await fetch("/api/bids", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          playerId: currentPlayer.id,
+          teamId: adminBidTeamId,
+          amount: adminBidAmount,
+        }),
+      });
+
+      if (res.ok) {
+        socket?.emit("place-bid", {
+          auctionId,
+          playerId: currentPlayer.id,
+          teamId: adminBidTeamId,
+          amount: adminBidAmount,
+        });
+        await fetchBids(currentPlayer.id);
+        await fetchData(false); // Refresh teams to update budgets
+        setAdminBidAmount(adminBidAmount + bidIncrement);
+      } else {
+        const error = await res.json();
+        alert(error.error || "Failed to place bid");
+      }
+    } catch (error) {
+      console.error("Error placing admin bid:", error);
+      alert("Failed to place bid");
+    } finally {
+      setPlacingAdminBid(false);
+    }
+  };
+
+  const increaseAdminBid = () => {
+    setAdminBidAmount((prev) => prev + bidIncrement);
+  };
+
+  const decreaseAdminBid = () => {
+    const minBid = bids.length > 0 ? bids[0].amount + bidIncrement : currentPlayer?.basePrice || 0;
+    setAdminBidAmount((prev) => Math.max(minBid, prev - bidIncrement));
+  };
+
   const moveToNextPlayer = async () => {
     if (!currentPlayer) return;
 
@@ -778,6 +881,156 @@ export default function ConductAuctionPage() {
               )}
             </CardContent>
           </Card>
+
+          {auction?.status === "IN_PROGRESS" && currentPlayer && currentPlayer.status !== "SOLD" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Place Bid on Behalf of Team</CardTitle>
+                <CardDescription>Admin can bid for any team</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Select Team</Label>
+                    <Select value={adminBidTeamId} onValueChange={setAdminBidTeamId}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Choose a team..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {teams.map((team) => {
+                          const currentPlayerCount = team._count.players;
+                          const hasReachedMax = currentPlayerCount >= (auction.maxPlayersPerTeam || 0);
+                          const remainingBudget = team.remainingBudget;
+
+                          return (
+                            <SelectItem
+                              key={team.id}
+                              value={team.id}
+                              disabled={hasReachedMax || remainingBudget <= 0}
+                            >
+                              {team.name} - {formatCurrency(remainingBudget)}
+                              {hasReachedMax && " (Squad Full)"}
+                              {remainingBudget <= 0 && !hasReachedMax && " (No Budget)"}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {adminBidTeamId && (() => {
+                    const selectedTeam = teams.find(t => t.id === adminBidTeamId);
+                    if (!selectedTeam) return null;
+
+                    const currentPlayerCount = selectedTeam._count.players;
+                    const remainingRequiredPlayers = Math.max(0, auction.minPlayersPerTeam - currentPlayerCount - 1);
+                    const maxAllowableBid = selectedTeam.remainingBudget - (remainingRequiredPlayers * auction.minPlayerPrice);
+                    const hasReachedMax = currentPlayerCount >= auction.maxPlayersPerTeam;
+                    const canAfford = maxAllowableBid > 0;
+
+                    return (
+                      <>
+                        {hasReachedMax && (
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                              <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="font-semibold text-red-900 mb-1">Squad Full</p>
+                                <p className="text-sm text-red-700">
+                                  {selectedTeam.name} has reached the maximum squad size of {auction.maxPlayersPerTeam} players.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {!hasReachedMax && !canAfford && (
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                              <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="font-semibold text-red-900 mb-1">Cannot Afford This Player</p>
+                                <p className="text-sm text-red-700">
+                                  {selectedTeam.name} needs to reserve {formatCurrency(remainingRequiredPlayers * auction.minPlayerPrice)} for {remainingRequiredPlayers} more player(s).
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {!hasReachedMax && canAfford && (
+                          <>
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                              <div className="flex justify-between items-center text-sm mb-1">
+                                <span className="text-gray-600">Maximum Allowable Bid:</span>
+                                <span className="font-bold text-amber-900">
+                                  {formatCurrency(Math.max(0, maxAllowableBid))}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-600">
+                                Reserve {formatCurrency(remainingRequiredPlayers * auction.minPlayerPrice)} for {remainingRequiredPlayers} more player(s)
+                              </p>
+                            </div>
+
+                            <div>
+                              <Label>Bid Amount</Label>
+                              <div className="flex items-center gap-2 mt-2">
+                                <Button
+                                  onClick={decreaseAdminBid}
+                                  variant="outline"
+                                  size="icon"
+                                  disabled={placingAdminBid}
+                                  type="button"
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </Button>
+                                <Input
+                                  type="number"
+                                  value={adminBidAmount}
+                                  onChange={(e) => setAdminBidAmount(parseInt(e.target.value) || 0)}
+                                  className="text-center text-xl font-bold"
+                                  step={bidIncrement}
+                                />
+                                <Button
+                                  onClick={increaseAdminBid}
+                                  variant="outline"
+                                  size="icon"
+                                  disabled={placingAdminBid}
+                                  type="button"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-2">
+                                Increment: {formatCurrency(bidIncrement)}
+                              </p>
+                            </div>
+
+                            <Button
+                              onClick={placeAdminBid}
+                              className="w-full"
+                              size="lg"
+                              disabled={placingAdminBid || adminBidAmount > maxAllowableBid}
+                            >
+                              {placingAdminBid
+                                ? "Placing Bid..."
+                                : `Place Bid for ${selectedTeam.name} - ${formatCurrency(adminBidAmount)}`}
+                            </Button>
+
+                            {adminBidAmount > maxAllowableBid && (
+                              <p className="text-sm text-red-600 text-center">
+                                Bid exceeds maximum allowable amount!
+                              </p>
+                            )}
+                          </>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+          )}
             </>
           )}
         </div>
