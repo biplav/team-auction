@@ -4,6 +4,9 @@ import bcrypt from "bcryptjs"
 import prisma from "./prisma"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  // Trust host for Railway/Vercel deployment (reads from AUTH_TRUST_HOST env var)
+  trustHost: true,
+
   providers: [
     Credentials({
       name: "Credentials",
