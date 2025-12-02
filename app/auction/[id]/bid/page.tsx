@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -82,7 +82,20 @@ export default function BiddingPage() {
   const [soldPlayer, setSoldPlayer] = useState<SoldPlayerData | null>(null);
   const [showSoldAnimation, setShowSoldAnimation] = useState(false);
 
+  // Refs to maintain current values for socket handlers (avoiding stale closures)
+  const currentPlayerRef = useRef<Player | null>(null);
+  const auctionRef = useRef<Auction | null>(null);
+
   const bidIncrement = 50000; // 50k increment
+
+  // Update refs when state changes
+  useEffect(() => {
+    currentPlayerRef.current = currentPlayer;
+  }, [currentPlayer]);
+
+  useEffect(() => {
+    auctionRef.current = auction;
+  }, [auction]);
 
   // Haptic feedback function
   const triggerHaptic = (type: 'success' | 'warning' | 'error' = 'success') => {
@@ -126,8 +139,8 @@ export default function BiddingPage() {
 
     socketInstance.on("bid-placed", (data) => {
       console.log("New bid received:", data);
-      if (currentPlayer && data.playerId === currentPlayer.id) {
-        fetchBids(currentPlayer.id);
+      if (currentPlayerRef.current && data.playerId === currentPlayerRef.current.id) {
+        fetchBids(currentPlayerRef.current.id);
       }
     });
 
@@ -186,20 +199,20 @@ export default function BiddingPage() {
     });
 
     socketInstance.on("auction-paused", () => {
-      if (auction) {
-        setAuction({ ...auction, status: "PAUSED" });
+      if (auctionRef.current) {
+        setAuction({ ...auctionRef.current, status: "PAUSED" });
       }
     });
 
     socketInstance.on("auction-resumed", () => {
-      if (auction) {
-        setAuction({ ...auction, status: "IN_PROGRESS" });
+      if (auctionRef.current) {
+        setAuction({ ...auctionRef.current, status: "IN_PROGRESS" });
       }
     });
 
     socketInstance.on("bids-discarded", (data) => {
       console.log("Bids discarded:", data);
-      if (currentPlayer && data.playerId === currentPlayer.id) {
+      if (currentPlayerRef.current && data.playerId === currentPlayerRef.current.id) {
         setBids([]);
       }
     });
