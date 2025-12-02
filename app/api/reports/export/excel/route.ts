@@ -29,7 +29,8 @@ export async function GET(request: NextRequest) {
     const excelBuffer = workbookToBuffer(workbook);
 
     // Return Excel as downloadable file
-    return new NextResponse(excelBuffer, {
+    // Convert Buffer to Uint8Array for NextResponse compatibility
+    return new NextResponse(new Uint8Array(excelBuffer), {
       headers: {
         "Content-Type":
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

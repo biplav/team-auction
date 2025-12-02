@@ -25,7 +25,8 @@ export async function GET(request: NextRequest) {
     const filename = `comprehensive-report-${comprehensiveData.auction.name.replace(/\s+/g, "-")}.pdf`;
 
     // Return PDF as downloadable file
-    return new NextResponse(pdfBuffer, {
+    // Convert Buffer to Uint8Array for NextResponse compatibility
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${filename}"`,
