@@ -81,6 +81,7 @@ export default function BiddingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [soldPlayer, setSoldPlayer] = useState<SoldPlayerData | null>(null);
   const [showSoldAnimation, setShowSoldAnimation] = useState(false);
+  const [renderKey, setRenderKey] = useState(0); // Force re-render counter
 
   // Refs to maintain current values for socket handlers (avoiding stale closures)
   const currentPlayerRef = useRef<Player | null>(null);
@@ -96,6 +97,26 @@ export default function BiddingPage() {
   useEffect(() => {
     auctionRef.current = auction;
   }, [auction]);
+
+  // Handle page visibility to force updates when tab becomes active
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Tab became visible - force refresh data
+        console.log("Tab became visible - refreshing data");
+        if (currentPlayer) {
+          fetchBids(currentPlayer.id);
+        }
+        fetchData(false);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [currentPlayer?.id]);
 
   // Haptic feedback function
   const triggerHaptic = (type: 'success' | 'warning' | 'error' = 'success') => {
@@ -143,6 +164,8 @@ export default function BiddingPage() {
         fetchBids(data.playerId);
         // Also refresh team data to update budgets
         fetchData(false);
+        // Force re-render to ensure UI updates even in background tabs
+        setRenderKey(prev => prev + 1);
       }
     });
 
