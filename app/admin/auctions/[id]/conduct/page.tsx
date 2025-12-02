@@ -505,11 +505,19 @@ export default function ConductAuctionPage() {
       return;
     }
 
-    // Check if bid is higher than current highest bid
-    const highestBidAmount = bids.length > 0 ? bids[0].amount : currentPlayer.basePrice;
-    if (adminBidAmount <= highestBidAmount) {
-      alert(`Bid must be higher than the current highest bid of ${formatCurrency(highestBidAmount)}`);
-      return;
+    // Validate admin bid amount
+    if (bids.length > 0) {
+      // If there are existing bids, new bid must be higher than current highest
+      if (adminBidAmount <= bids[0].amount) {
+        alert(`Bid must be higher than the current highest bid of ${formatCurrency(bids[0].amount)}`);
+        return;
+      }
+    } else {
+      // If no bids yet, bid must be at least the base price
+      if (adminBidAmount < currentPlayer.basePrice) {
+        alert(`Bid must be at least the base price of ${formatCurrency(currentPlayer.basePrice)}`);
+        return;
+      }
     }
 
     setPlacingAdminBid(true);

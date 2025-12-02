@@ -474,10 +474,19 @@ export default function BiddingPage() {
       return;
     }
 
-    const highestBidAmount = bids.length > 0 ? bids[0].amount : currentPlayer.basePrice;
-    if (bidAmount <= highestBidAmount) {
-      alert("Bid must be higher than the current highest bid!");
-      return;
+    // Validate bid amount
+    if (bids.length > 0) {
+      // If there are existing bids, new bid must be higher than current highest
+      if (bidAmount <= bids[0].amount) {
+        alert("Bid must be higher than the current highest bid!");
+        return;
+      }
+    } else {
+      // If no bids yet, bid must be at least the base price
+      if (bidAmount < currentPlayer.basePrice) {
+        alert(`Bid must be at least the base price of ${formatCurrencyUtil(currentPlayer.basePrice)}!`);
+        return;
+      }
     }
 
     setSubmitting(true);
