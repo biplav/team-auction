@@ -573,6 +573,13 @@ export default function AuctionsPage() {
                       </Link>
                     </Button>
                   </div>
+                  <div className="flex gap-2">
+                    <Button asChild variant="outline" className="flex-1">
+                      <Link href={`/admin/auctions/${auction.id}/reports`}>
+                        Reports
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
