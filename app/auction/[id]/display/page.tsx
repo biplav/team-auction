@@ -310,6 +310,43 @@ export default function AuctionDisplayPage() {
   const highestBid = bids.length > 0 ? bids[0] : null;
   const sortedTeams = [...teams].sort((a, b) => b._count.players - a._count.players);
 
+  // Calculate live statistics
+  const calculateStatistics = () => {
+    const allPlayers = sortedTeams.flatMap(team => team.players || []);
+
+    // Fastest sale (lowest time between auction start and sale)
+    // For now, we'll use the first sold player as fastest (can enhance with timestamps later)
+    const soldPlayers = allPlayers.filter(p => p.soldPrice && p.soldPrice > 0);
+    const fastestSale = soldPlayers.length > 0 ? soldPlayers[0] : null;
+
+    // Highest sale
+    const highestSale = soldPlayers.length > 0
+      ? soldPlayers.reduce((max, p) => (p.soldPrice || 0) > (max.soldPrice || 0) ? p : max)
+      : null;
+
+    // Best bargain (lowest price relative to potential value - for now, just lowest sold price)
+    const bestBargain = soldPlayers.length > 0
+      ? soldPlayers.reduce((min, p) => (p.soldPrice || Infinity) < (min.soldPrice || Infinity) ? p : min)
+      : null;
+
+    return { fastestSale, highestSale, bestBargain, soldPlayers };
+  };
+
+  // Calculate role distribution for each team
+  const getTeamRoleDistribution = (team: Team) => {
+    if (!team.players || team.players.length === 0) return {};
+
+    const distribution: Record<string, number> = {};
+    team.players.forEach(player => {
+      const role = player.role.replace(/_/g, ' ');
+      distribution[role] = (distribution[role] || 0) + 1;
+    });
+
+    return distribution;
+  };
+
+  const statistics = calculateStatistics();
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-900 to-purple-900 flex items-center justify-center">
@@ -436,6 +473,54 @@ export default function AuctionDisplayPage() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Live Statistics */}
+            {statistics.soldPlayers.length > 0 && (
+              <Card className="bg-white/95 backdrop-blur mt-6">
+                <CardHeader>
+                  <CardTitle className="text-2xl">Auction Highlights</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-4">
+                    {/* Fastest Sale */}
+                    {statistics.fastestSale && (
+                      <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-2xl">⚡</span>
+                          <p className="text-xs font-semibold text-yellow-800 uppercase tracking-wide">Fastest Sale</p>
+                        </div>
+                        <p className="text-lg font-bold text-yellow-900 truncate">{statistics.fastestSale.name}</p>
+                        <p className="text-sm text-yellow-700">{formatCurrency(statistics.fastestSale.soldPrice || 0)}</p>
+                      </div>
+                    )}
+
+                    {/* Highest Sale */}
+                    {statistics.highestSale && (
+                      <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-2xl">💰</span>
+                          <p className="text-xs font-semibold text-green-800 uppercase tracking-wide">Highest Sale</p>
+                        </div>
+                        <p className="text-lg font-bold text-green-900 truncate">{statistics.highestSale.name}</p>
+                        <p className="text-sm text-green-700">{formatCurrency(statistics.highestSale.soldPrice || 0)}</p>
+                      </div>
+                    )}
+
+                    {/* Best Bargain */}
+                    {statistics.bestBargain && (
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-2xl">🎯</span>
+                          <p className="text-xs font-semibold text-blue-800 uppercase tracking-wide">Best Bargain</p>
+                        </div>
+                        <p className="text-lg font-bold text-blue-900 truncate">{statistics.bestBargain.name}</p>
+                        <p className="text-sm text-blue-700">{formatCurrency(statistics.bestBargain.soldPrice || 0)}</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           <div>
@@ -445,25 +530,29 @@ export default function AuctionDisplayPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {sortedTeams.map((team, index) => (
-                    <div key={team.id} className="p-4 bg-gray-50 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-2xl font-bold text-gray-400">
-                            #{index + 1}
-                          </span>
-                          <span className="font-bold text-lg">{team.name}</span>
-                        </div>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Badge
-                              variant="outline"
-                              className="text-sm cursor-pointer hover:bg-gray-100 transition-colors"
-                              onClick={() => fetchTeamPlayers(team)}
-                            >
-                              {team._count.players} players
-                            </Badge>
-                          </DialogTrigger>
+                  {sortedTeams.map((team, index) => {
+                    const roleDistribution = getTeamRoleDistribution(team);
+                    const budgetUsedPercent = ((team.initialBudget - team.remainingBudget) / team.initialBudget) * 100;
+
+                    return (
+                      <div key={team.id} className="p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl font-bold text-gray-400">
+                              #{index + 1}
+                            </span>
+                            <span className="font-bold text-lg">{team.name}</span>
+                          </div>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Badge
+                                variant="outline"
+                                className="text-sm cursor-pointer hover:bg-gray-100 transition-colors"
+                                onClick={() => fetchTeamPlayers(team)}
+                              >
+                                {team._count.players} players
+                              </Badge>
+                            </DialogTrigger>
                           <DialogContent className="max-w-md">
                             <DialogHeader>
                               <DialogTitle>{team.name} - Squad</DialogTitle>
@@ -504,31 +593,61 @@ export default function AuctionDisplayPage() {
                             </div>
                           </DialogContent>
                         </Dialog>
-                      </div>
-                      <div className="mt-2">
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-600">Budget</span>
-                          <span className="font-medium">
-                            {formatCurrency(team.remainingBudget)}
-                          </span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full ${
-                              team.remainingBudget > team.initialBudget * 0.5
-                                ? "bg-green-500"
-                                : team.remainingBudget > team.initialBudget * 0.2
-                                ? "bg-yellow-500"
-                                : "bg-red-500"
-                            }`}
-                            style={{
-                              width: `${(team.remainingBudget / team.initialBudget) * 100}%`,
-                            }}
-                          ></div>
+
+                        {/* Budget Utilization */}
+                        <div className="mt-3">
+                          <div className="flex justify-between text-sm mb-1">
+                            <span className="text-gray-600">Budget Used</span>
+                            <span className="font-medium">
+                              {budgetUsedPercent.toFixed(1)}% ({formatCurrency(team.initialBudget - team.remainingBudget)})
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                            <div
+                              className={`h-3 rounded-full transition-all duration-500 ${
+                                budgetUsedPercent < 50
+                                  ? "bg-gradient-to-r from-green-400 to-green-500"
+                                  : budgetUsedPercent < 75
+                                  ? "bg-gradient-to-r from-yellow-400 to-yellow-500"
+                                  : "bg-gradient-to-r from-red-400 to-red-500"
+                              }`}
+                              style={{
+                                width: `${budgetUsedPercent}%`,
+                              }}
+                            ></div>
+                          </div>
+                          <div className="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>₹0</span>
+                            <span>{formatCurrency(team.initialBudget)}</span>
+                          </div>
                         </div>
+
+                        {/* Role Distribution */}
+                        {Object.keys(roleDistribution).length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <p className="text-xs font-semibold text-gray-600 mb-2">Squad Composition</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              {Object.entries(roleDistribution).map(([role, count]) => (
+                                <div key={role} className="flex items-center gap-2 text-xs">
+                                  <span className={`w-2 h-2 rounded-full ${
+                                    role.includes('BATSMAN') || role.includes('Batsman')
+                                      ? 'bg-blue-500'
+                                      : role.includes('BOWLER') || role.includes('Bowler')
+                                      ? 'bg-red-500'
+                                      : role.includes('ALL') || role.includes('All')
+                                      ? 'bg-purple-500'
+                                      : 'bg-green-500'
+                                  }`}></span>
+                                  <span className="text-gray-700">{role}: <strong>{count}</strong></span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
