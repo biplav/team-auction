@@ -139,8 +139,10 @@ export default function BiddingPage() {
 
     socketInstance.on("bid-placed", (data) => {
       console.log("New bid received:", data);
-      if (currentPlayerRef.current && data.playerId === currentPlayerRef.current.id) {
-        fetchBids(currentPlayerRef.current.id);
+      if (data.playerId) {
+        fetchBids(data.playerId);
+        // Also refresh team data to update budgets
+        fetchData(false);
       }
     });
 
@@ -212,7 +214,7 @@ export default function BiddingPage() {
 
     socketInstance.on("bids-discarded", (data) => {
       console.log("Bids discarded:", data);
-      if (currentPlayerRef.current && data.playerId === currentPlayerRef.current.id) {
+      if (data.playerId) {
         setBids([]);
       }
     });
