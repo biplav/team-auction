@@ -32,8 +32,10 @@ function normalizeRole(role: string): PlayerRole {
   return normalized as PlayerRole;
 }
 
-function validateRow(row: PlayerRow, rowIndex: number): ValidationError[] {
+function validateRow(row: PlayerRow, rowIndex: number, defaultBasePrice: number): { errors: ValidationError[], finalPrice: number, usingDefault: boolean } {
   const errors: ValidationError[] = [];
+  let finalPrice = defaultBasePrice;
+  let usingDefault = false;
 
   // Required fields validation
   if (!row.name || row.name.trim() === "") {
@@ -66,11 +68,16 @@ function validateRow(row: PlayerRow, rowIndex: number): ValidationError[] {
     });
   }
 
-  if (!row.basePrice || isNaN(Number(row.basePrice))) {
+  // Base price validation - now optional, use default if missing
+  if (row.basePrice === undefined || row.basePrice === null || row.basePrice === '') {
+    // Use auction's default price
+    finalPrice = defaultBasePrice;
+    usingDefault = true;
+  } else if (isNaN(Number(row.basePrice))) {
     errors.push({
       row: rowIndex,
       field: "basePrice",
-      message: "Base price must be a valid number",
+      message: "Base price must be a valid number or left empty to use default",
     });
   } else if (Number(row.basePrice) < 0) {
     errors.push({
@@ -78,6 +85,9 @@ function validateRow(row: PlayerRow, rowIndex: number): ValidationError[] {
       field: "basePrice",
       message: "Base price cannot be negative",
     });
+  } else {
+    finalPrice = Number(row.basePrice);
+    usingDefault = false;
   }
 
   // Optional numeric fields validation
@@ -92,7 +102,7 @@ function validateRow(row: PlayerRow, rowIndex: number): ValidationError[] {
     }
   });
 
-  return errors;
+  return { errors, finalPrice, usingDefault };
 }
 
 // POST /api/players/bulk-upload - Upload players from Excel/CSV
@@ -124,9 +134,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify auction exists
+    // Verify auction exists and fetch minPlayerPrice
     const auction = await prisma.auction.findUnique({
       where: { id: auctionId },
+      select: { id: true, minPlayerPrice: true },
     });
 
     if (!auction) {
@@ -136,11 +147,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate all rows first
+    // Determine default base price (fallback to ₹5L if auction's minPlayerPrice is 0)
+    const defaultBasePrice = auction.minPlayerPrice || 500000;
+
+    // Validate all rows first and collect pricing info
     const allErrors: ValidationError[] = [];
+    const playerPriceInfo: Array<{ player: PlayerRow, finalPrice: number, usingDefault: boolean }> = [];
+
     players.forEach((player, index) => {
-      const rowErrors = validateRow(player, index + 2); // +2 because row 1 is header, array is 0-indexed
-      allErrors.push(...rowErrors);
+      const result = validateRow(player, index + 2, defaultBasePrice); // +2 because row 1 is header, array is 0-indexed
+      allErrors.push(...result.errors);
+      playerPriceInfo.push({
+        player,
+        finalPrice: result.finalPrice,
+        usingDefault: result.usingDefault,
+      });
     });
 
     // If there are any validation errors, return them without inserting anything
@@ -156,16 +177,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // All validations passed, now create players
+    // All validations passed, now create players with determined prices
     const createdPlayers = await prisma.$transaction(
-      players.map((player) => {
+      playerPriceInfo.map(({ player, finalPrice }) => {
         const { name, phoneNumber, role, basePrice, ...otherFields } = player;
 
         return prisma.player.create({
           data: {
             name: name.trim(),
             role: normalizeRole(role),
-            basePrice: Number(basePrice),
+            basePrice: finalPrice,
             auctionId,
             stats: {
               phoneNumber: phoneNumber.toString().trim(),
@@ -176,10 +197,16 @@ export async function POST(request: NextRequest) {
       })
     );
 
+    // Count how many players used default price
+    const playersUsingDefault = playerPriceInfo.filter(p => p.usingDefault).length;
+
     return NextResponse.json({
       success: true,
       message: `Successfully uploaded ${createdPlayers.length} players`,
       count: createdPlayers.length,
+      defaultPriceUsed: defaultBasePrice,
+      playersUsingDefault: playersUsingDefault,
+      playersWithSpecifiedPrice: createdPlayers.length - playersUsingDefault,
       players: createdPlayers,
     }, { status: 201 });
   } catch (error) {

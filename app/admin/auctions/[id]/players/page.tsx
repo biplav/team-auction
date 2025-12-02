@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 import * as XLSX from "xlsx";
 
 interface Player {
@@ -45,6 +47,7 @@ export default function PlayersPage() {
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+  const [auctionSettings, setAuctionSettings] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: "",
     phoneNumber: "",
@@ -59,6 +62,7 @@ export default function PlayersPage() {
 
   useEffect(() => {
     fetchPlayers();
+    fetchAuctionSettings();
   }, [auctionId]);
 
   const fetchPlayers = async () => {
@@ -70,6 +74,16 @@ export default function PlayersPage() {
       console.error("Error fetching players:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAuctionSettings = async () => {
+    try {
+      const response = await fetch(`/api/auctions/${auctionId}`);
+      const data = await response.json();
+      setAuctionSettings(data);
+    } catch (error) {
+      console.error("Error fetching auction settings:", error);
     }
   };
 
@@ -87,17 +101,22 @@ export default function PlayersPage() {
         const json = XLSX.utils.sheet_to_json(worksheet);
 
         // Convert to expected format
-        const players = json.map((row: any) => ({
-          name: row.name || row.Name || row.NAME || row["Player Name"] || row["player name"] || "",
-          phoneNumber: row.phoneNumber || row.PhoneNumber || row["Phone Number"] || row.phone || "",
-          role: row.role || row.Role || row.ROLE || "",
-          basePrice: row.basePrice || row["Base Price"] || row.price || row.Price || 0,
-          battingStyle: row.battingStyle || row["Batting Style"] || "",
-          bowlingStyle: row.bowlingStyle || row["Bowling Style"] || "",
-          matches: row.matches || row.Matches || "",
-          runs: row.runs || row.Runs || "",
-          wickets: row.wickets || row.Wickets || "",
-        }));
+        const players = json.map((row: any) => {
+          // Handle basePrice - allow empty/null to use auction default
+          const basePrice = row.basePrice || row["Base Price"] || row.price || row.Price;
+
+          return {
+            name: row.name || row.Name || row.NAME || row["Player Name"] || row["player name"] || "",
+            phoneNumber: row.phoneNumber || row.PhoneNumber || row["Phone Number"] || row.phone || "",
+            role: row.role || row.Role || row.ROLE || "",
+            basePrice: basePrice === undefined || basePrice === null || basePrice === '' ? null : basePrice,
+            battingStyle: row.battingStyle || row["Batting Style"] || "",
+            bowlingStyle: row.bowlingStyle || row["Bowling Style"] || "",
+            matches: row.matches || row.Matches || "",
+            runs: row.runs || row.Runs || "",
+            wickets: row.wickets || row.Wickets || "",
+          };
+        });
 
         await uploadPlayers(players);
       } catch (error) {
@@ -134,7 +153,16 @@ export default function PlayersPage() {
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
-        alert(`Successfully uploaded ${data.count} players!`);
+
+        // Show detailed success message with pricing info
+        let message = `Successfully uploaded ${data.count} players!`;
+        if (data.playersUsingDefault > 0) {
+          message += `\n\n${data.playersUsingDefault} player(s) using default price: ₹${data.defaultPriceUsed.toLocaleString()}`;
+        }
+        if (data.playersWithSpecifiedPrice > 0) {
+          message += `\n${data.playersWithSpecifiedPrice} player(s) with custom prices`;
+        }
+        alert(message);
       } else {
         if (data.validationErrors) {
           setValidationErrors(data.validationErrors);
@@ -242,6 +270,7 @@ export default function PlayersPage() {
   };
 
   const downloadTemplate = () => {
+    const defaultPrice = auctionSettings?.minPlayerPrice || 500000;
     const template = [
       {
         name: "Virat Kohli",
@@ -257,7 +286,7 @@ export default function PlayersPage() {
         name: "Rohit Sharma",
         phoneNumber: "9876543211",
         role: "BATSMAN",
-        basePrice: 4500000,
+        basePrice: "", // Empty - will use default price
         battingStyle: "Right-hand",
         bowlingStyle: "Right-arm off break",
         jerseyNumber: 45,
@@ -277,7 +306,7 @@ export default function PlayersPage() {
         name: "Ravindra Jadeja",
         phoneNumber: "9876543213",
         role: "ALL_ROUNDER",
-        basePrice: 3500000,
+        basePrice: "", // Empty - will use default price
         battingStyle: "Left-hand",
         bowlingStyle: "Left-arm orthodox",
         jerseyNumber: 8,
@@ -327,7 +356,7 @@ export default function PlayersPage() {
         name: "Shubman Gill",
         phoneNumber: "9876543218",
         role: "BATSMAN",
-        basePrice: 2500000,
+        basePrice: "", // Empty - will use default price
         battingStyle: "Right-hand",
         bowlingStyle: "Right-arm off break",
         jerseyNumber: 77,
@@ -345,9 +374,31 @@ export default function PlayersPage() {
       },
     ];
 
-    const ws = XLSX.utils.json_to_sheet(template);
+    // Create instructions sheet
+    const instructions = [
+      ["Cricket Auction - Player Upload Template"],
+      [""],
+      ["INSTRUCTIONS:"],
+      [""],
+      ["Required Columns:"],
+      ["  - name: Player's full name"],
+      ["  - phoneNumber: Contact number"],
+      ["  - role: BATSMAN, BOWLER, ALL_ROUNDER, or WICKET_KEEPER"],
+      [""],
+      ["Optional Columns:"],
+      [`  - basePrice: Starting auction price (leave empty to use default: ₹${defaultPrice.toLocaleString()})`],
+      ["  - battingStyle, bowlingStyle, jerseyNumber, city, etc."],
+      [""],
+      ["Note: In the Players sheet, some examples have empty basePrice to show it's optional."],
+      ["All players with empty basePrice will automatically use the auction's default price."],
+    ];
+
+    const ws_players = XLSX.utils.json_to_sheet(template);
+    const ws_instructions = XLSX.utils.aoa_to_sheet(instructions);
+
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Players");
+    XLSX.utils.book_append_sheet(wb, ws_instructions, "Instructions");
+    XLSX.utils.book_append_sheet(wb, ws_players, "Players");
     XLSX.writeFile(wb, "players_template.xlsx");
   };
 
@@ -376,16 +427,28 @@ export default function PlayersPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {auctionSettings && (
+                <Alert className="bg-green-50 border-green-200">
+                  <Info className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800">
+                    <strong>Automatic Base Price:</strong> Players without a specified base price will automatically use the auction default of{' '}
+                    <strong className="text-lg">₹{(auctionSettings.minPlayerPrice || 500000).toLocaleString()}</strong>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h3 className="font-semibold mb-2">Required Columns:</h3>
                 <ul className="list-disc list-inside space-y-1 text-sm">
                   <li><strong>name</strong> or <strong>Player Name</strong> - Player's full name</li>
                   <li><strong>phoneNumber</strong> or <strong>Phone Number</strong> - Contact number</li>
                   <li><strong>role</strong> - One of: BATSMAN, BOWLER, ALL_ROUNDER, WICKET_KEEPER</li>
-                  <li><strong>basePrice</strong> or <strong>Base Price</strong> - Starting auction price</li>
                 </ul>
                 <h3 className="font-semibold mt-3 mb-2">Optional Columns:</h3>
-                <p className="text-sm">battingStyle, bowlingStyle, matches, runs, wickets, or any custom fields</p>
+                <ul className="list-disc list-inside space-y-1 text-sm">
+                  <li><strong>basePrice</strong> or <strong>Base Price</strong> - Starting auction price (defaults to ₹{(auctionSettings?.minPlayerPrice || 500000).toLocaleString()} if empty)</li>
+                  <li>battingStyle, bowlingStyle, matches, runs, wickets, or any custom fields</li>
+                </ul>
               </div>
 
               <div className="flex gap-2">
