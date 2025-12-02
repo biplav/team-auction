@@ -359,41 +359,41 @@ export default function AuctionDisplayPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-purple-900 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-purple-900 p-4 md:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold text-white mb-4">
+        <div className="text-center mb-6 md:mb-8">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
             {auction?.name}
           </h1>
           {auction && (
-            <Badge className={`${getStatusColor(auction.status)} text-white text-lg px-6 py-2`}>
+            <Badge className={`${getStatusColor(auction.status)} text-white text-sm md:text-base lg:text-lg px-4 md:px-6 py-1.5 md:py-2`}>
               {auction.status.replace("_", " ")}
             </Badge>
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-6 mb-8">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+          <div className="lg:col-span-2 order-1">
             <Card className="bg-white/95 backdrop-blur">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-3xl">Current Player</CardTitle>
+              <CardHeader className="pb-3 md:pb-4">
+                <CardTitle className="text-xl md:text-2xl lg:text-3xl">Current Player</CardTitle>
               </CardHeader>
               <CardContent>
                 {currentPlayer ? (
-                  <div className="space-y-6">
-                    <div className="flex items-start justify-between gap-6">
-                      <div className="flex-1">
-                        <h2 className="text-5xl font-bold mb-3">{currentPlayer.name}</h2>
-                        <Badge className="text-lg px-4 py-1">
+                  <div className="space-y-4 md:space-y-6">
+                    <div className="flex flex-col md:flex-row items-start justify-between gap-4 md:gap-6">
+                      <div className="flex-1 w-full md:w-auto">
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3">{currentPlayer.name}</h2>
+                        <Badge className="text-sm md:text-base lg:text-lg px-3 md:px-4 py-1">
                           {currentPlayer.role.replace("_", " ")}
                         </Badge>
                       </div>
                       {(() => {
                         const displayableStats = getDisplayablePlayerStats(currentPlayer.stats);
                         return displayableStats.length > 0 ? (
-                          <div className="flex-1 bg-gray-50 p-4 rounded-lg">
-                            <p className="text-sm font-bold text-gray-700 mb-3">Player Info</p>
-                            <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="flex-1 w-full md:w-auto bg-gray-50 p-3 md:p-4 rounded-lg">
+                            <p className="text-xs md:text-sm font-bold text-gray-700 mb-2 md:mb-3">Player Info</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 text-sm">
                               {displayableStats.map((stat) => (
                                 <div key={stat.key}>
                                   <p className="text-xs text-gray-600 uppercase tracking-wide">
@@ -408,16 +408,16 @@ export default function AuctionDisplayPage() {
                       })()}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-6 mt-8">
-                      <div className="bg-blue-50 p-6 rounded-lg">
-                        <p className="text-sm text-gray-600 mb-2">Base Price</p>
-                        <p className="text-3xl font-bold text-blue-900">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 mt-6 md:mt-8">
+                      <div className="bg-blue-50 p-4 md:p-6 rounded-lg">
+                        <p className="text-xs md:text-sm text-gray-600 mb-2">Base Price</p>
+                        <p className="text-xl sm:text-2xl md:text-3xl font-bold text-blue-900">
                           {formatCurrency(currentPlayer.basePrice)}
                         </p>
                       </div>
-                      <div className="bg-green-50 p-6 rounded-lg">
-                        <p className="text-sm text-gray-600 mb-2">Current Bid</p>
-                        <p className="text-3xl font-bold text-green-900">
+                      <div className="bg-green-50 p-4 md:p-6 rounded-lg">
+                        <p className="text-xs md:text-sm text-gray-600 mb-2">Current Bid</p>
+                        <p className="text-xl sm:text-2xl md:text-3xl font-bold text-green-900">
                           {highestBid ? formatCurrency(highestBid.amount) : "No bids"}
                         </p>
                         {highestBid && (
@@ -450,16 +450,16 @@ export default function AuctionDisplayPage() {
             </Card>
 
             {bids.length > 0 && (
-              <Card className="bg-white/95 backdrop-blur mt-6">
-                <CardHeader>
-                  <CardTitle className="text-2xl">Recent Bids</CardTitle>
+              <Card className="bg-white/95 backdrop-blur mt-4 md:mt-6">
+                <CardHeader className="pb-3 md:pb-4">
+                  <CardTitle className="text-lg md:text-xl lg:text-2xl">Recent Bids</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
+                  <div className="space-y-2 md:space-y-3 max-h-64 md:max-h-none overflow-y-auto">
                     {bids.slice(0, 5).map((bid, index) => (
                       <div
                         key={bid.id}
-                        className={`p-4 rounded-lg ${
+                        className={`p-3 md:p-4 rounded-lg ${
                           index === 0
                             ? "bg-green-100 border-2 border-green-400"
                             : "bg-gray-100"
@@ -467,13 +467,13 @@ export default function AuctionDisplayPage() {
                       >
                         <div className="flex justify-between items-center">
                           <div>
-                            <p className="text-xl font-bold">{bid.team.name}</p>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-base md:text-lg lg:text-xl font-bold">{bid.team.name}</p>
+                            <p className="text-xs md:text-sm text-gray-600">
                               {new Date(bid.createdAt).toLocaleTimeString()}
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="text-2xl font-bold">
+                            <p className="text-lg md:text-xl lg:text-2xl font-bold">
                               {formatCurrency(bid.amount)}
                             </p>
                             {index === 0 && (
@@ -492,12 +492,12 @@ export default function AuctionDisplayPage() {
 
             {/* Live Statistics */}
             {statistics.soldPlayers.length > 0 && (
-              <Card className="bg-white/95 backdrop-blur mt-6">
-                <CardHeader>
-                  <CardTitle className="text-2xl">Auction Highlights</CardTitle>
+              <Card className="bg-white/95 backdrop-blur mt-4 md:mt-6">
+                <CardHeader className="pb-3 md:pb-4">
+                  <CardTitle className="text-lg md:text-xl lg:text-2xl">Auction Highlights</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                     {/* Fastest Sale */}
                     {statistics.fastestSale && (
                       <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200">
@@ -539,25 +539,25 @@ export default function AuctionDisplayPage() {
             )}
           </div>
 
-          <div>
-            <Card className="bg-white/95 backdrop-blur">
-              <CardHeader>
-                <CardTitle className="text-2xl">Team Standings</CardTitle>
+          <div className="order-2 lg:order-2">
+            <Card className="bg-white/95 backdrop-blur lg:sticky lg:top-8">
+              <CardHeader className="pb-3 md:pb-4">
+                <CardTitle className="text-lg md:text-xl lg:text-2xl">Team Standings</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                   {sortedTeams.map((team, index) => {
                     const roleDistribution = getTeamRoleDistribution(team);
                     const budgetUsedPercent = ((team.initialBudget - team.remainingBudget) / team.initialBudget) * 100;
 
                     return (
-                      <div key={team.id} className="p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center justify-between mb-3">
+                      <div key={team.id} className="p-3 md:p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-2 md:mb-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-2xl font-bold text-gray-400">
+                            <span className="text-lg md:text-xl lg:text-2xl font-bold text-gray-400">
                               #{index + 1}
                             </span>
-                            <span className="font-bold text-lg">{team.name}</span>
+                            <span className="font-bold text-sm md:text-base lg:text-lg">{team.name}</span>
                           </div>
                           <Dialog>
                             <DialogTrigger asChild>
@@ -673,57 +673,57 @@ export default function AuctionDisplayPage() {
 
       {/* Sold Animation Overlay */}
       {showSoldAnimation && soldPlayer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="relative w-full max-w-4xl mx-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 p-4">
+          <div className="relative w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto">
             {/* SOLD Banner */}
-            <div className="mb-8 animate-in slide-in-from-top duration-500">
-              <h1 className="text-9xl font-black text-center text-white drop-shadow-2xl tracking-wider">
+            <div className="mb-6 md:mb-8 animate-in slide-in-from-top duration-500">
+              <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-center text-white drop-shadow-2xl tracking-wider">
                 🎊 SOLD! 🎊
               </h1>
             </div>
 
             {/* Player & Team Card */}
             <div
-              className="relative overflow-hidden rounded-3xl shadow-2xl animate-in zoom-in duration-700"
+              className="relative overflow-hidden rounded-2xl md:rounded-3xl shadow-2xl animate-in zoom-in duration-700"
               style={{
                 background: soldPlayer.teamColor
                   ? `linear-gradient(135deg, ${soldPlayer.teamColor}22 0%, ${soldPlayer.teamColor}88 100%)`
                   : "linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.6) 100%)",
-                border: soldPlayer.teamColor ? `4px solid ${soldPlayer.teamColor}` : "4px solid #3b82f6",
+                border: soldPlayer.teamColor ? `3px solid ${soldPlayer.teamColor}` : "3px solid #3b82f6",
               }}
             >
-              <div className="p-12 bg-white/95 backdrop-blur">
+              <div className="p-6 md:p-10 lg:p-12 bg-white/95 backdrop-blur">
                 {/* Player Name */}
-                <div className="mb-6 text-center animate-in slide-in-from-left duration-700 delay-300">
-                  <p className="text-2xl text-gray-600 mb-2 font-medium">Player</p>
-                  <h2 className="text-6xl font-black text-gray-900 mb-3">{soldPlayer.playerName}</h2>
-                  <Badge className="text-xl px-6 py-2 bg-gray-800 text-white">
+                <div className="mb-4 md:mb-6 text-center animate-in slide-in-from-left duration-700 delay-300">
+                  <p className="text-base md:text-xl lg:text-2xl text-gray-600 mb-2 font-medium">Player</p>
+                  <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 mb-3">{soldPlayer.playerName}</h2>
+                  <Badge className="text-sm md:text-base lg:text-xl px-4 md:px-6 py-1.5 md:py-2 bg-gray-800 text-white">
                     {soldPlayer.playerRole.replace("_", " ")}
                   </Badge>
                 </div>
 
                 {/* Divider */}
-                <div className="my-8 border-t-4 border-gray-300"></div>
+                <div className="my-6 md:my-8 border-t-2 md:border-t-4 border-gray-300"></div>
 
                 {/* Team & Price */}
-                <div className="grid grid-cols-2 gap-8 animate-in slide-in-from-right duration-700 delay-500">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 animate-in slide-in-from-right duration-700 delay-500">
                   {/* Team */}
                   <div className="text-center">
-                    <p className="text-2xl text-gray-600 mb-3 font-medium">Bought By</p>
+                    <p className="text-base md:text-xl lg:text-2xl text-gray-600 mb-2 md:mb-3 font-medium">Bought By</p>
                     <div
-                      className="inline-block px-8 py-6 rounded-2xl text-white shadow-xl"
+                      className="inline-block px-6 md:px-8 py-4 md:py-6 rounded-xl md:rounded-2xl text-white shadow-xl"
                       style={{
                         backgroundColor: soldPlayer.teamColor || "#3b82f6",
                       }}
                     >
-                      <h3 className="text-4xl font-black">{soldPlayer.teamName}</h3>
+                      <h3 className="text-2xl md:text-3xl lg:text-4xl font-black">{soldPlayer.teamName}</h3>
                     </div>
                   </div>
 
                   {/* Price */}
                   <div className="text-center">
-                    <p className="text-2xl text-gray-600 mb-3 font-medium">Final Price</p>
-                    <div className="inline-block px-8 py-6 rounded-2xl bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-xl">
+                    <p className="text-base md:text-xl lg:text-2xl text-gray-600 mb-2 md:mb-3 font-medium">Final Price</p>
+                    <div className="inline-block px-6 md:px-8 py-4 md:py-6 rounded-xl md:rounded-2xl bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-xl">
                       <PriceCountUp targetPrice={soldPlayer.soldPrice} />
                     </div>
                   </div>
@@ -732,8 +732,8 @@ export default function AuctionDisplayPage() {
 
               {/* Decorative Elements */}
               <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
-                <div className="absolute -top-20 -left-20 w-40 h-40 bg-white/20 rounded-full blur-3xl animate-pulse"></div>
-                <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-white/20 rounded-full blur-3xl animate-pulse delay-300"></div>
+                <div className="absolute -top-10 md:-top-20 -left-10 md:-left-20 w-20 md:w-40 h-20 md:h-40 bg-white/20 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute -bottom-10 md:-bottom-20 -right-10 md:-right-20 w-20 md:w-40 h-20 md:h-40 bg-white/20 rounded-full blur-3xl animate-pulse delay-300"></div>
               </div>
             </div>
           </div>

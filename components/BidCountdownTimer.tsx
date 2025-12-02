@@ -101,13 +101,13 @@ export function BidCountdownTimer({
   // Large variant for prominent display
   if (variant === "large") {
     return (
-      <div className={`p-6 rounded-xl border-2 ${getColorClass()} transition-all duration-300`}>
-        <div className="flex items-center justify-center gap-3 mb-3">
-          <Clock className="h-6 w-6" />
-          <p className="text-sm font-semibold uppercase tracking-wide">Time Since Last Bid</p>
+      <div className={`p-4 md:p-6 rounded-lg md:rounded-xl border-2 ${getColorClass()} transition-all duration-300`}>
+        <div className="flex items-center justify-center gap-2 md:gap-3 mb-2 md:mb-3">
+          <Clock className="h-5 md:h-6 w-5 md:h-6" />
+          <p className="text-xs md:text-sm font-semibold uppercase tracking-wide">Time Since Last Bid</p>
         </div>
         <div className="text-center">
-          <p className="text-5xl font-black tabular-nums">{formatTime(timeRemaining)}</p>
+          <p className="text-3xl sm:text-4xl md:text-5xl font-black tabular-nums">{formatTime(timeRemaining)}</p>
         </div>
         <div className="mt-4 w-full bg-gray-200 rounded-full h-2 overflow-hidden">
           <div
