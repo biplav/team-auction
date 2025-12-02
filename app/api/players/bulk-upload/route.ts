@@ -7,7 +7,7 @@ interface PlayerRow {
   name: string;
   phoneNumber: string;
   role: string;
-  basePrice: number;
+  basePrice?: number | string | null;
   battingStyle?: string;
   bowlingStyle?: string;
   matches?: number;

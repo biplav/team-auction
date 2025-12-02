@@ -13,6 +13,7 @@ import { ArrowLeft, Play, Pause, SkipForward, Gavel, XCircle, Trash2, Plus, Minu
 import Link from "next/link";
 import io, { Socket } from "socket.io-client";
 import confetti from "canvas-confetti";
+import { getDisplayablePlayerStats } from "@/lib/utils/player-utils";
 
 interface Player {
   id: string;
@@ -770,28 +771,24 @@ export default function ConductAuctionPage() {
                     </div>
                   )}
 
-                  {currentPlayer.stats && Object.keys(currentPlayer.stats).length > 0 && (
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                      <p className="text-sm font-semibold text-gray-700 mb-3">Player Details</p>
-                      <div className="grid grid-cols-2 gap-3">
-                        {Object.entries(currentPlayer.stats).map(([key, value]) => {
-                          // Mask phone numbers
-                          const displayValue = key.toLowerCase().includes('phone') && String(value).length > 4
-                            ? `****${String(value).slice(-4)}`
-                            : String(value);
-
-                          return (
-                            <div key={key}>
+                  {(() => {
+                    const displayableStats = getDisplayablePlayerStats(currentPlayer.stats);
+                    return displayableStats.length > 0 ? (
+                      <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                        <p className="text-sm font-semibold text-gray-700 mb-3">Player Details</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          {displayableStats.map((stat) => (
+                            <div key={stat.key}>
                               <p className="text-xs text-gray-600 capitalize">
-                                {key.replace(/([A-Z])/g, ' $1').trim()}
+                                {stat.label}
                               </p>
-                              <p className="text-sm font-medium">{displayValue}</p>
+                              <p className="text-sm font-medium">{stat.value}</p>
                             </div>
-                          );
-                        })}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    ) : null;
+                  })()}
 
                   <div className="flex flex-col gap-2 mt-6">
                     {currentPlayer.status === "SOLD" ? (

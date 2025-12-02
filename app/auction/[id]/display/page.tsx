@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import io, { Socket } from "socket.io-client";
 import confetti from "canvas-confetti";
+import { getDisplayablePlayerStats } from "@/lib/utils/player-utils";
 
 interface Player {
   id: string;
@@ -347,28 +348,24 @@ export default function AuctionDisplayPage() {
                           {currentPlayer.role.replace("_", " ")}
                         </Badge>
                       </div>
-                      {currentPlayer.stats && Object.keys(currentPlayer.stats).length > 0 && (
-                        <div className="flex-1 bg-gray-50 p-4 rounded-lg">
-                          <p className="text-sm font-bold text-gray-700 mb-3">Player Info</p>
-                          <div className="grid grid-cols-2 gap-3 text-sm">
-                            {Object.entries(currentPlayer.stats).map(([key, value]) => {
-                              // Mask phone numbers
-                              const displayValue = key.toLowerCase().includes('phone') && String(value).length > 4
-                                ? `****${String(value).slice(-4)}`
-                                : String(value);
-
-                              return (
-                                <div key={key}>
+                      {(() => {
+                        const displayableStats = getDisplayablePlayerStats(currentPlayer.stats);
+                        return displayableStats.length > 0 ? (
+                          <div className="flex-1 bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm font-bold text-gray-700 mb-3">Player Info</p>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              {displayableStats.map((stat) => (
+                                <div key={stat.key}>
                                   <p className="text-xs text-gray-600 uppercase tracking-wide">
-                                    {key.replace(/([A-Z])/g, ' $1').trim()}
+                                    {stat.label}
                                   </p>
-                                  <p className="font-semibold text-gray-900">{displayValue}</p>
+                                  <p className="font-semibold text-gray-900">{stat.value}</p>
                                 </div>
-                              );
-                            })}
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        ) : null;
+                      })()}
                     </div>
 
                     <div className="grid grid-cols-2 gap-6 mt-8">
