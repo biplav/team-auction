@@ -55,6 +55,7 @@ interface Auction {
   minPlayersPerTeam: number;
   maxPlayersPerTeam: number;
   minPlayerPrice: number;
+  minBidIncrement: number;
   bidTimerSeconds: number;
   timerEnabled: boolean;
   teams?: Team[];
