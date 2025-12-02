@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,10 +10,40 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function SignInPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { data: session } = useSession();
   const [email, setEmail] = useState("admin@cricauction.com");
   const [password, setPassword] = useState("admin123");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const callbackUrl = searchParams.get("callbackUrl");
+  const errorParam = searchParams.get("error");
+
+  useEffect(() => {
+    if (errorParam === "unauthorized") {
+      setError("You don't have permission to access that page. Please sign in with appropriate credentials.");
+    }
+  }, [errorParam]);
+
+  // If already signed in, redirect to callback or dashboard
+  useEffect(() => {
+    if (session?.user) {
+      const redirectTo = callbackUrl || getDashboardForRole(session.user.role);
+      router.push(redirectTo);
+    }
+  }, [session, callbackUrl, router]);
+
+  const getDashboardForRole = (role: string) => {
+    switch (role) {
+      case "ADMIN":
+        return "/admin/auctions";
+      case "TEAM_OWNER":
+        return "/team-owner/dashboard";
+      default:
+        return "/";
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,8 +60,9 @@ export default function SignInPage() {
       if (result?.error) {
         setError("Invalid email or password");
       } else {
-        // Redirect to home page which will handle role-based routing
-        router.push("/");
+        // Redirect to callback URL or role-based dashboard
+        const redirectTo = callbackUrl || "/";
+        router.push(redirectTo);
         router.refresh();
       }
     } catch (error) {
