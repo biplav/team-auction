@@ -13,6 +13,7 @@ import io, { Socket } from "socket.io-client";
 import { canAffordPlayer, formatCurrency as formatCurrencyUtil } from "@/lib/budget";
 import confetti from "canvas-confetti";
 import { BidCountdownTimer } from "@/components/BidCountdownTimer";
+import { getDisplayablePlayerStats } from "@/lib/utils/player-utils";
 
 interface Player {
   id: string;
@@ -586,6 +587,25 @@ export default function BiddingPage() {
                             </p>
                           </div>
                         )}
+
+                        {(() => {
+                          const displayableStats = getDisplayablePlayerStats(currentPlayer.stats);
+                          return displayableStats.length > 0 ? (
+                            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                              <p className="text-sm font-semibold text-gray-700 mb-3">Player Details</p>
+                              <div className="grid grid-cols-2 gap-3">
+                                {displayableStats.map((stat) => (
+                                  <div key={stat.key}>
+                                    <p className="text-xs text-gray-600 capitalize">
+                                      {stat.label}
+                                    </p>
+                                    <p className="text-sm font-medium">{stat.value}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null;
+                        })()}
                       </>
                     )}
                   </div>
