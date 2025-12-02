@@ -90,6 +90,16 @@ export default function BiddingPage() {
 
   const bidIncrement = 50000; // 50k increment
 
+  // Component render tracker
+  console.log('[DEBUG] BiddingPage RENDER', {
+    timestamp: new Date().toISOString(),
+    renderKey,
+    bidsCount: bids.length,
+    currentPlayerId: currentPlayer?.id,
+    myTeamBudget: myTeam?.remainingBudget,
+    tabHidden: typeof document !== 'undefined' ? document.hidden : 'unknown'
+  });
+
   // Update refs when state changes
   useEffect(() => {
     currentPlayerRef.current = currentPlayer;
@@ -102,11 +112,15 @@ export default function BiddingPage() {
   // Handle page visibility to force updates when tab becomes active
   useEffect(() => {
     const handleVisibilityChange = () => {
+      console.log('[DEBUG] Visibility changed. Hidden:', document.hidden);
       if (!document.hidden) {
         // Tab became visible - force refresh data
-        console.log("Tab became visible - refreshing data");
+        console.log("[DEBUG] Tab became visible - refreshing data");
         if (currentPlayer) {
+          console.log('[DEBUG] Fetching bids for player:', currentPlayer.id);
           fetchBids(currentPlayer.id);
+        } else {
+          console.log('[DEBUG] No current player, skipping bid fetch');
         }
         fetchData(false);
       }
@@ -155,18 +169,29 @@ export default function BiddingPage() {
     });
 
     socketInstance.on("connect", () => {
-      console.log("Connected to socket server");
+      console.log("[DEBUG] Connected to socket server");
       socketInstance.emit("join-auction", auctionId);
     });
 
     socketInstance.on("bid-placed", (data) => {
-      console.log("New bid received:", data);
+      console.log("[DEBUG] Socket: bid-placed event received", {
+        timestamp: new Date().toISOString(),
+        playerId: data.playerId,
+        tabHidden: document.hidden,
+        currentPlayerRef: currentPlayerRef.current?.id
+      });
       if (data.playerId) {
+        console.log('[DEBUG] Calling fetchBids for player:', data.playerId);
         fetchBids(data.playerId);
-        // Also refresh team data to update budgets
+        console.log('[DEBUG] Calling fetchData to refresh team budgets');
         fetchData(false);
-        // Force re-render to ensure UI updates even in background tabs
-        setRenderKey(prev => prev + 1);
+        console.log('[DEBUG] Incrementing renderKey from', renderKey);
+        setRenderKey(prev => {
+          console.log('[DEBUG] RenderKey updated:', prev, '=>', prev + 1);
+          return prev + 1;
+        });
+      } else {
+        console.log('[DEBUG] No playerId in bid-placed event, skipping update');
       }
     });
 
@@ -252,60 +277,79 @@ export default function BiddingPage() {
   }, [auctionId]);
 
   useEffect(() => {
+    console.log('[DEBUG] useEffect[currentPlayer]: currentPlayer changed', currentPlayer?.id);
     if (currentPlayer) {
       fetchBids(currentPlayer.id);
       const highestBidAmount = bids.length > 0 ? bids[0].amount : currentPlayer.basePrice;
+      console.log('[DEBUG] useEffect[currentPlayer]: Setting bid amount to', highestBidAmount + bidIncrement);
       setBidAmount(highestBidAmount + bidIncrement);
     }
   }, [currentPlayer]);
 
   useEffect(() => {
+    console.log('[DEBUG] useEffect[bids]: bids changed, count:', bids.length);
     if (bids.length > 0 && currentPlayer) {
       const highestBidAmount = bids[0].amount;
+      console.log('[DEBUG] useEffect[bids]: Updating bid amount to', highestBidAmount + bidIncrement);
       setBidAmount(highestBidAmount + bidIncrement);
     }
   }, [bids]);
 
   const fetchData = async (showLoader = false) => {
+    console.log('[DEBUG] fetchData called, showLoader:', showLoader);
     try {
       if (showLoader) {
         setLoading(true);
       }
       const auctionRes = await fetch(`/api/auctions/${auctionId}`);
+      console.log('[DEBUG] fetchData: API response status:', auctionRes.status);
 
       if (auctionRes.ok) {
         const auctionData = await auctionRes.json();
+        console.log('[DEBUG] fetchData: Auction data received, teams count:', auctionData.teams?.length);
         setAuction(auctionData);
 
         // Find user's team from the auction data
         // Use myTeam.id if already set, otherwise try to find by session
         if (myTeam?.id) {
+          console.log('[DEBUG] fetchData: Finding team by existing myTeam.id:', myTeam.id);
           const updatedTeam = auctionData.teams?.find(
             (t: Team) => t.id === myTeam.id
           );
           if (updatedTeam) {
+            console.log('[DEBUG] fetchData: Team found, updating budget:', updatedTeam.remainingBudget);
             setMyTeam(updatedTeam);
+          } else {
+            console.log('[DEBUG] fetchData: Team not found in auction data');
           }
         } else if (session?.user?.id) {
+          console.log('[DEBUG] fetchData: Finding team by session user:', session.user.id);
           const userTeam = auctionData.teams?.find(
             (t: Team) => t.ownerId === session.user.id
           );
           if (userTeam) {
+            console.log('[DEBUG] fetchData: User team found:', userTeam.id);
             setMyTeam(userTeam);
+          } else {
+            console.log('[DEBUG] fetchData: User team not found');
           }
+        } else {
+          console.log('[DEBUG] fetchData: No myTeam.id or session.user.id');
         }
 
         // Set current player if auction has one
         if (auctionData.currentPlayerId) {
+          console.log('[DEBUG] fetchData: Fetching current player:', auctionData.currentPlayerId);
           fetchCurrentPlayer(auctionData.currentPlayerId);
         }
       }
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("[DEBUG] Error fetching data:", error);
     } finally {
       if (showLoader) {
         setLoading(false);
       }
+      console.log('[DEBUG] fetchData completed');
     }
   };
 
@@ -322,14 +366,25 @@ export default function BiddingPage() {
   };
 
   const fetchBids = async (playerId: string) => {
+    console.log('[DEBUG] fetchBids called for player:', playerId);
     try {
       const res = await fetch(`/api/bids?playerId=${playerId}`);
+      console.log('[DEBUG] fetchBids: API response status:', res.status);
       if (res.ok) {
         const data = await res.json();
+        console.log('[DEBUG] fetchBids: Received', data.length, 'bids');
+        if (data.length > 0) {
+          console.log('[DEBUG] fetchBids: Highest bid:', {
+            team: data[0].team.name,
+            amount: data[0].amount,
+            timestamp: data[0].createdAt
+          });
+        }
         setBids(data);
+        console.log('[DEBUG] fetchBids: State updated with new bids');
       }
     } catch (error) {
-      console.error("Error fetching bids:", error);
+      console.error("[DEBUG] Error fetching bids:", error);
     }
   };
 
