@@ -80,6 +80,23 @@ export default function BiddingPage() {
 
   const bidIncrement = 50000; // 50k increment
 
+  // Haptic feedback function
+  const triggerHaptic = (type: 'success' | 'warning' | 'error' = 'success') => {
+    if ('vibrate' in navigator) {
+      switch (type) {
+        case 'success':
+          navigator.vibrate(50); // Short vibration for success
+          break;
+        case 'warning':
+          navigator.vibrate([50, 50, 50]); // Triple vibration for warning
+          break;
+        case 'error':
+          navigator.vibrate([100, 50, 100]); // Double vibration for error
+          break;
+      }
+    }
+  };
+
   useEffect(() => {
     if (session?.user?.id) {
       fetchData(true); // Show loader on initial load
@@ -314,6 +331,7 @@ export default function BiddingPage() {
 
       if (res.ok) {
         const bid = await res.json();
+        triggerHaptic('success'); // Vibrate on successful bid
         socket?.emit("place-bid", {
           auctionId,
           playerId: currentPlayer.id,
@@ -324,10 +342,12 @@ export default function BiddingPage() {
         setBidAmount(bidAmount + bidIncrement);
       } else {
         const error = await res.json();
+        triggerHaptic('error');
         alert(error.error || "Failed to place bid");
       }
     } catch (error) {
       console.error("Error placing bid:", error);
+      triggerHaptic('error');
       alert("Failed to place bid");
     } finally {
       setSubmitting(false);
@@ -335,12 +355,20 @@ export default function BiddingPage() {
   };
 
   const increaseBid = () => {
+    triggerHaptic('success');
     setBidAmount((prev) => prev + bidIncrement);
   };
 
   const decreaseBid = () => {
+    triggerHaptic('success');
     const minBid = bids.length > 0 ? bids[0].amount + bidIncrement : currentPlayer?.basePrice || 0;
     setBidAmount((prev) => Math.max(minBid, prev - bidIncrement));
+  };
+
+  // Quick bid functions
+  const quickBid = (amount: number) => {
+    triggerHaptic('success');
+    setBidAmount((prev) => prev + amount);
   };
 
   const formatCurrency = (amount: number) => {
@@ -417,36 +445,39 @@ export default function BiddingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 pb-32 md:pb-8 md:p-8">
       <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">{auction?.name}</h1>
-          {auction && (
-            <div className="flex items-center justify-center gap-3">
-              <Badge className={`${getStatusColor(auction.status)} text-white text-sm px-4 py-1`}>
-                {auction.status.replace("_", " ")}
-              </Badge>
-              <Button asChild variant="outline" size="sm">
-                <a href={`/auction/${auctionId}/display`} target="_blank">
-                  Public Display
-                </a>
-              </Button>
-            </div>
-          )}
+        {/* Sticky Header for Mobile */}
+        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm shadow-sm p-4 mb-4 md:relative md:bg-transparent md:shadow-none md:p-0">
+          <div className="text-center">
+            <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{auction?.name}</h1>
+            {auction && (
+              <div className="flex items-center justify-center gap-2 md:gap-3">
+                <Badge className={`${getStatusColor(auction.status)} text-white text-xs md:text-sm px-3 md:px-4 py-1`}>
+                  {auction.status.replace("_", " ")}
+                </Badge>
+                <Button asChild variant="outline" size="sm" className="hidden md:inline-flex">
+                  <a href={`/auction/${auctionId}/display`} target="_blank">
+                    Public Display
+                  </a>
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-6">
+        <div className="grid md:grid-cols-2 gap-4 md:gap-6 px-4 md:px-0">
+          <div className="space-y-4 md:space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Current Player</CardTitle>
+                <CardTitle className="text-lg md:text-xl">Current Player</CardTitle>
               </CardHeader>
               <CardContent>
                 {currentPlayer ? (
                   <div className="space-y-4">
                     <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <h2 className="text-3xl font-bold">{currentPlayer.name}</h2>
+                      <div className="flex items-center gap-2 md:gap-3 mb-2">
+                        <h2 className="text-2xl md:text-3xl font-bold">{currentPlayer.name}</h2>
                         {currentPlayer.status === "SOLD" && (
                           <Badge className="bg-green-600 text-white">SOLD</Badge>
                         )}
@@ -515,7 +546,7 @@ export default function BiddingPage() {
             </Card>
 
             {auction?.status === "IN_PROGRESS" && currentPlayer && currentPlayer.status !== "SOLD" && (
-              <Card>
+              <Card className="hidden md:block">
                 <CardHeader>
                   <CardTitle>Place Your Bid</CardTitle>
                   <CardDescription>Bid for {currentPlayer.name}</CardDescription>
@@ -552,6 +583,34 @@ export default function BiddingPage() {
                       <p className="text-sm text-gray-600 mt-2">
                         Increment: {formatCurrency(bidIncrement)}
                       </p>
+                    </div>
+
+                    {/* Quick Bid Buttons - Desktop Only */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <Button
+                        onClick={() => quickBid(50000)}
+                        variant="outline"
+                        size="sm"
+                        disabled={submitting}
+                      >
+                        +50K
+                      </Button>
+                      <Button
+                        onClick={() => quickBid(100000)}
+                        variant="outline"
+                        size="sm"
+                        disabled={submitting}
+                      >
+                        +1L
+                      </Button>
+                      <Button
+                        onClick={() => quickBid(200000)}
+                        variant="outline"
+                        size="sm"
+                        disabled={submitting}
+                      >
+                        +2L
+                      </Button>
                     </div>
 
                     {hasReachedMaxPlayers && (
@@ -632,8 +691,8 @@ export default function BiddingPage() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>My Team: {myTeam.name}</CardTitle>
-                <CardDescription>Budget and squad overview</CardDescription>
+                <CardTitle className="text-lg md:text-xl">My Team: {myTeam.name}</CardTitle>
+                <CardDescription className="text-xs md:text-sm">Budget and squad overview</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -721,16 +780,16 @@ export default function BiddingPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Recent Bids</CardTitle>
-                <CardDescription>Latest bids for current player</CardDescription>
+                <CardTitle className="text-lg md:text-xl">Recent Bids</CardTitle>
+                <CardDescription className="text-xs md:text-sm">Latest bids for current player</CardDescription>
               </CardHeader>
               <CardContent>
                 {bids.length > 0 ? (
-                  <div className="space-y-2">
-                    {bids.slice(0, 10).map((bid, index) => (
+                  <div className="space-y-2 max-h-64 md:max-h-none overflow-y-auto">
+                    {bids.slice(0, 5).map((bid, index) => (
                       <div
                         key={bid.id}
-                        className={`p-3 rounded-lg ${
+                        className={`p-2 md:p-3 rounded-lg ${
                           index === 0
                             ? "bg-green-100 border border-green-300"
                             : bid.team.id === myTeam.id
@@ -740,7 +799,7 @@ export default function BiddingPage() {
                       >
                         <div className="flex justify-between items-center">
                           <div>
-                            <p className="font-semibold">
+                            <p className="font-semibold text-sm md:text-base">
                               {bid.team.name}
                               {bid.team.id === myTeam.id && (
                                 <span className="text-xs ml-2 text-blue-600">(You)</span>
@@ -751,7 +810,7 @@ export default function BiddingPage() {
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="font-bold">{formatCurrency(bid.amount)}</p>
+                            <p className="font-bold text-sm md:text-base">{formatCurrency(bid.amount)}</p>
                             {index === 0 && (
                               <Badge className="text-xs bg-green-600">Highest</Badge>
                             )}
@@ -770,6 +829,104 @@ export default function BiddingPage() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Sticky Bottom Bidding Panel */}
+      {auction?.status === "IN_PROGRESS" && currentPlayer && currentPlayer.status !== "SOLD" && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white border-t-2 border-gray-200 shadow-2xl">
+          <div className="p-4 space-y-3">
+            {/* Current Bid Display */}
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-xs text-gray-600">Your Bid</p>
+                <p className="text-2xl font-bold text-blue-600">{formatCurrency(bidAmount)}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-600">Highest Bid</p>
+                <p className="text-lg font-bold text-green-600">
+                  {highestBid ? formatCurrency(highestBid.amount) : "None"}
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Bid Buttons */}
+            <div className="grid grid-cols-4 gap-2">
+              <Button
+                onClick={decreaseBid}
+                variant="outline"
+                size="lg"
+                disabled={submitting}
+                className="h-12 text-lg"
+              >
+                <Minus className="h-5 w-5" />
+              </Button>
+              <Button
+                onClick={() => quickBid(50000)}
+                variant="outline"
+                size="lg"
+                disabled={submitting}
+                className="h-12 text-sm font-bold"
+              >
+                +50K
+              </Button>
+              <Button
+                onClick={() => quickBid(100000)}
+                variant="outline"
+                size="lg"
+                disabled={submitting}
+                className="h-12 text-sm font-bold"
+              >
+                +1L
+              </Button>
+              <Button
+                onClick={increaseBid}
+                variant="outline"
+                size="lg"
+                disabled={submitting}
+                className="h-12 text-lg"
+              >
+                <Plus className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Warnings */}
+            {hasReachedMaxPlayers && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-2">
+                <p className="text-xs text-red-700 font-semibold">
+                  ⚠️ Squad Full ({auction?.maxPlayersPerTeam} players)
+                </p>
+              </div>
+            )}
+
+            {!hasReachedMaxPlayers && !affordabilityCheck.canAfford && affordabilityCheck.reason && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-2">
+                <p className="text-xs text-red-700 font-semibold">⚠️ {affordabilityCheck.reason}</p>
+              </div>
+            )}
+
+            {/* Place Bid Button - Large and Prominent */}
+            <Button
+              onClick={placeBid}
+              className="w-full h-14 text-lg font-bold"
+              size="lg"
+              disabled={submitting || !currentPlayer || hasReachedMaxPlayers || !affordabilityCheck.canAfford || bidAmount > maxAllowableBid}
+            >
+              {submitting
+                ? "Placing Bid..."
+                : hasReachedMaxPlayers
+                ? "Squad Full"
+                : !affordabilityCheck.canAfford
+                ? "Cannot Afford"
+                : `Place Bid - ${formatCurrency(bidAmount)}`}
+            </Button>
+
+            {/* Budget Info */}
+            <div className="flex justify-between text-xs text-gray-600">
+              <span>Budget: {formatCurrency(myTeam?.remainingBudget || 0)}</span>
+              <span>Max: {formatCurrency(maxAllowableBid)}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sold Animation Overlay */}
       {showSoldAnimation && soldPlayer && (
