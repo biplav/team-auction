@@ -23,6 +23,7 @@ interface Auction {
   minPlayerPrice: number;
   minBidIncrement: number;
   bidTimerSeconds: number;
+  timerEnabled: boolean;
   createdAt: string;
   _count: {
     teams: number;
@@ -57,6 +58,7 @@ export default function AuctionsPage() {
     minPlayerPrice: 0,
     minBidIncrement: 50000,
     bidTimerSeconds: 90,
+    timerEnabled: true,
   });
   const [editFormData, setEditFormData] = useState({
     name: "",
@@ -68,6 +70,7 @@ export default function AuctionsPage() {
     minPlayerPrice: 0,
     minBidIncrement: 50000,
     bidTimerSeconds: 90,
+    timerEnabled: true,
   });
 
   useEffect(() => {
@@ -113,6 +116,7 @@ export default function AuctionsPage() {
           minPlayerPrice: formData.minPlayerPrice,
           minBidIncrement: formData.minBidIncrement,
           bidTimerSeconds: formData.bidTimerSeconds,
+          timerEnabled: formData.timerEnabled,
         }),
       });
 
@@ -128,6 +132,7 @@ export default function AuctionsPage() {
           minPlayerPrice: 0,
           minBidIncrement: 50000,
           bidTimerSeconds: 90,
+          timerEnabled: true,
         });
         fetchAuctions();
       } else {
@@ -155,6 +160,7 @@ export default function AuctionsPage() {
       minPlayerPrice: auction.minPlayerPrice,
       minBidIncrement: auction.minBidIncrement,
       bidTimerSeconds: auction.bidTimerSeconds,
+      timerEnabled: auction.timerEnabled,
     });
     setEditOpen(true);
   };
@@ -187,6 +193,7 @@ export default function AuctionsPage() {
           minPlayerPrice: editFormData.minPlayerPrice,
           minBidIncrement: editFormData.minBidIncrement,
           bidTimerSeconds: editFormData.bidTimerSeconds,
+          timerEnabled: editFormData.timerEnabled,
         }),
       });
 
@@ -353,22 +360,39 @@ export default function AuctionsPage() {
                   Minimum amount by which bids must increase (e.g., ₹50,000)
                 </p>
               </div>
-              <div>
-                <Label htmlFor="bidTimerSeconds">Bid Timer (seconds)</Label>
-                <Input
-                  id="bidTimerSeconds"
-                  type="number"
-                  min="30"
-                  max="300"
-                  step="10"
-                  value={formData.bidTimerSeconds}
-                  onChange={(e) => setFormData({ ...formData, bidTimerSeconds: parseInt(e.target.value) })}
-                  required
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="timerEnabled"
+                  checked={formData.timerEnabled}
+                  onChange={(e) => setFormData({ ...formData, timerEnabled: e.target.checked })}
+                  className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Indicative countdown timer since last bid (default: 90 seconds)
-                </p>
+                <div className="flex-1">
+                  <Label htmlFor="timerEnabled" className="cursor-pointer font-semibold">Enable Bid Timer</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Display an indicative countdown timer during bidding
+                  </p>
+                </div>
               </div>
+              {formData.timerEnabled && (
+                <div>
+                  <Label htmlFor="bidTimerSeconds">Bid Timer (seconds)</Label>
+                  <Input
+                    id="bidTimerSeconds"
+                    type="number"
+                    min="30"
+                    max="300"
+                    step="10"
+                    value={formData.bidTimerSeconds}
+                    onChange={(e) => setFormData({ ...formData, bidTimerSeconds: parseInt(e.target.value) })}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Indicative countdown timer since last bid (default: 90 seconds)
+                  </p>
+                </div>
+              )}
               <div className="flex gap-2 justify-end">
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                   Cancel
@@ -502,22 +526,39 @@ export default function AuctionsPage() {
                   Minimum amount by which bids must increase (e.g., ₹50,000)
                 </p>
               </div>
-              <div>
-                <Label htmlFor="edit-bidTimerSeconds">Bid Timer (seconds)</Label>
-                <Input
-                  id="edit-bidTimerSeconds"
-                  type="number"
-                  min="30"
-                  max="300"
-                  step="10"
-                  value={editFormData.bidTimerSeconds}
-                  onChange={(e) => setEditFormData({ ...editFormData, bidTimerSeconds: parseInt(e.target.value) })}
-                  required
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="edit-timerEnabled"
+                  checked={editFormData.timerEnabled}
+                  onChange={(e) => setEditFormData({ ...editFormData, timerEnabled: e.target.checked })}
+                  className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Indicative countdown timer since last bid (default: 90 seconds)
-                </p>
+                <div className="flex-1">
+                  <Label htmlFor="edit-timerEnabled" className="cursor-pointer font-semibold">Enable Bid Timer</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Display an indicative countdown timer during bidding
+                  </p>
+                </div>
               </div>
+              {editFormData.timerEnabled && (
+                <div>
+                  <Label htmlFor="edit-bidTimerSeconds">Bid Timer (seconds)</Label>
+                  <Input
+                    id="edit-bidTimerSeconds"
+                    type="number"
+                    min="30"
+                    max="300"
+                    step="10"
+                    value={editFormData.bidTimerSeconds}
+                    onChange={(e) => setEditFormData({ ...editFormData, bidTimerSeconds: parseInt(e.target.value) })}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Indicative countdown timer since last bid (default: 90 seconds)
+                  </p>
+                </div>
+              )}
               <div className="flex gap-2 justify-end">
                 <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>
                   Cancel

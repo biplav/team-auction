@@ -8,6 +8,7 @@ interface BidCountdownTimerProps {
   lastBidTime: Date | null;
   currentPlayerSetAt: Date | null;
   auctionStatus: string;
+  timerEnabled?: boolean;
   variant?: "default" | "compact" | "large";
 }
 
@@ -16,6 +17,7 @@ export function BidCountdownTimer({
   lastBidTime,
   currentPlayerSetAt,
   auctionStatus,
+  timerEnabled = true,
   variant = "default",
 }: BidCountdownTimerProps) {
   const [timeRemaining, setTimeRemaining] = useState(timerSeconds);
@@ -81,8 +83,8 @@ export function BidCountdownTimer({
     return (timeRemaining / timerSeconds) * 100;
   };
 
-  // Don't show timer if auction is not in progress
-  if (auctionStatus !== "IN_PROGRESS") {
+  // Don't show timer if disabled or if auction is not in progress
+  if (!timerEnabled || auctionStatus !== "IN_PROGRESS") {
     return null;
   }
 

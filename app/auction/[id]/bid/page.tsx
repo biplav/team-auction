@@ -54,6 +54,7 @@ interface Auction {
   maxPlayersPerTeam: number;
   minPlayerPrice: number;
   bidTimerSeconds: number;
+  timerEnabled: boolean;
   teams?: Team[];
 }
 
@@ -556,6 +557,7 @@ export default function BiddingPage() {
                     lastBidTime={highestBid ? new Date(highestBid.createdAt) : null}
                     currentPlayerSetAt={auction.currentPlayerSetAt ? new Date(auction.currentPlayerSetAt) : null}
                     auctionStatus={auction.status}
+                    timerEnabled={auction.timerEnabled}
                     variant="default"
                   />
                 </CardContent>
@@ -859,6 +861,7 @@ export default function BiddingPage() {
                   lastBidTime={highestBid ? new Date(highestBid.createdAt) : null}
                   currentPlayerSetAt={auction.currentPlayerSetAt ? new Date(auction.currentPlayerSetAt) : null}
                   auctionStatus={auction.status}
+                  timerEnabled={auction.timerEnabled}
                   variant="compact"
                 />
               </div>

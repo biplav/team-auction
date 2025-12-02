@@ -66,6 +66,7 @@ interface Auction {
   maxPlayersPerTeam: number;
   minPlayerPrice: number;
   bidTimerSeconds: number;
+  timerEnabled: boolean;
 }
 
 interface SoldPlayerData {
@@ -890,6 +891,7 @@ export default function ConductAuctionPage() {
                   lastBidTime={highestBid ? new Date(highestBid.createdAt) : null}
                   currentPlayerSetAt={auction.currentPlayerSetAt ? new Date(auction.currentPlayerSetAt) : null}
                   auctionStatus={auction.status}
+                  timerEnabled={auction.timerEnabled}
                   variant="default"
                 />
               </CardContent>
