@@ -105,6 +105,31 @@ export default function PlayersPage() {
           // Handle basePrice - allow empty/null to use auction default
           const basePrice = row.basePrice || row["Base Price"] || row.price || row.Price;
 
+          // Extract known fields with various naming conventions
+          const knownFields = new Set([
+            'name', 'Name', 'NAME', 'Player Name', 'player name',
+            'phoneNumber', 'PhoneNumber', 'Phone Number', 'phone',
+            'role', 'Role', 'ROLE',
+            'basePrice', 'Base Price', 'price', 'Price',
+            'battingStyle', 'Batting Style',
+            'bowlingStyle', 'Bowling Style',
+            'matches', 'Matches',
+            'runs', 'Runs',
+            'wickets', 'Wickets'
+          ]);
+
+          // Collect all custom fields (fields not in knownFields set)
+          const customFields: Record<string, any> = {};
+          Object.keys(row).forEach(key => {
+            if (!knownFields.has(key)) {
+              const value = row[key];
+              // Only include non-empty values
+              if (value !== null && value !== undefined && value !== '') {
+                customFields[key] = value;
+              }
+            }
+          });
+
           return {
             name: row.name || row.Name || row.NAME || row["Player Name"] || row["player name"] || "",
             phoneNumber: row.phoneNumber || row.PhoneNumber || row["Phone Number"] || row.phone || "",
@@ -115,6 +140,7 @@ export default function PlayersPage() {
             matches: row.matches || row.Matches || "",
             runs: row.runs || row.Runs || "",
             wickets: row.wickets || row.Wickets || "",
+            ...customFields, // Include all custom fields from Excel
           };
         });
 
@@ -281,6 +307,8 @@ export default function PlayersPage() {
         bowlingStyle: "Right-arm medium",
         jerseyNumber: 18,
         city: "Delhi",
+        age: 35,
+        nationality: "India",
       },
       {
         name: "Rohit Sharma",
@@ -291,6 +319,8 @@ export default function PlayersPage() {
         bowlingStyle: "Right-arm off break",
         jerseyNumber: 45,
         city: "Mumbai",
+        age: 36,
+        nationality: "India",
       },
       {
         name: "Jasprit Bumrah",
@@ -387,7 +417,13 @@ export default function PlayersPage() {
       [""],
       ["Optional Columns:"],
       [`  - basePrice: Starting auction price (leave empty to use default: ₹${defaultPrice.toLocaleString()})`],
-      ["  - battingStyle, bowlingStyle, jerseyNumber, city, etc."],
+      ["  - battingStyle, bowlingStyle, matches, runs, wickets"],
+      ["  - jerseyNumber, city, age, nationality, or ANY custom field you want!"],
+      [""],
+      ["Custom Fields:"],
+      ["  - You can add ANY additional columns to the Excel file"],
+      ["  - All custom columns will be stored and displayed in player details"],
+      ["  - Examples: height, weight, experience, previousTeam, specialSkills, etc."],
       [""],
       ["Note: In the Players sheet, some examples have empty basePrice to show it's optional."],
       ["All players with empty basePrice will automatically use the auction's default price."],
@@ -447,8 +483,14 @@ export default function PlayersPage() {
                 <h3 className="font-semibold mt-3 mb-2">Optional Columns:</h3>
                 <ul className="list-disc list-inside space-y-1 text-sm">
                   <li><strong>basePrice</strong> or <strong>Base Price</strong> - Starting auction price (defaults to ₹{(auctionSettings?.minPlayerPrice || 500000).toLocaleString()} if empty)</li>
-                  <li>battingStyle, bowlingStyle, matches, runs, wickets, or any custom fields</li>
+                  <li>battingStyle, bowlingStyle, matches, runs, wickets</li>
+                  <li>jerseyNumber, city, age, nationality</li>
                 </ul>
+                <h3 className="font-semibold mt-3 mb-2">Custom Fields:</h3>
+                <p className="text-sm text-gray-700">
+                  <strong>✨ Add ANY additional columns</strong> to your Excel file! All custom fields will be automatically stored and displayed in player details.
+                  Examples: height, weight, experience, previousTeam, specialSkills, etc.
+                </p>
               </div>
 
               <div className="flex gap-2">
