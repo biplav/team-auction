@@ -254,11 +254,21 @@ export default function BiddingPage() {
         setAuction(auctionData);
 
         // Find user's team from the auction data
-        const userTeam = auctionData.teams?.find(
-          (t: Team) => t.ownerId === session?.user?.id
-        );
-        if (userTeam) {
-          setMyTeam(userTeam);
+        // Use myTeam.id if already set, otherwise try to find by session
+        if (myTeam?.id) {
+          const updatedTeam = auctionData.teams?.find(
+            (t: Team) => t.id === myTeam.id
+          );
+          if (updatedTeam) {
+            setMyTeam(updatedTeam);
+          }
+        } else if (session?.user?.id) {
+          const userTeam = auctionData.teams?.find(
+            (t: Team) => t.ownerId === session.user.id
+          );
+          if (userTeam) {
+            setMyTeam(userTeam);
+          }
         }
 
         // Set current player if auction has one
