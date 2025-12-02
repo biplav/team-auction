@@ -61,6 +61,7 @@ interface Auction {
   name: string;
   status: string;
   currentPlayerId: string | null;
+  currentPlayerSetAt: string | null;
   minPlayersPerTeam: number;
   maxPlayersPerTeam: number;
   minPlayerPrice: number;
@@ -887,6 +888,7 @@ export default function ConductAuctionPage() {
                 <BidCountdownTimer
                   timerSeconds={auction.bidTimerSeconds}
                   lastBidTime={highestBid ? new Date(highestBid.createdAt) : null}
+                  currentPlayerSetAt={auction.currentPlayerSetAt ? new Date(auction.currentPlayerSetAt) : null}
                   auctionStatus={auction.status}
                   variant="default"
                 />

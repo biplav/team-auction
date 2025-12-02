@@ -131,6 +131,7 @@ model Auction {
 
   currentPlayerId String?
   currentPlayer   Player?       @relation("CurrentPlayer", fields: [currentPlayerId], references: [id])
+  currentPlayerSetAt DateTime?
 
   maxTeams          Int           @default(8)
   maxPlayersPerTeam Int           @default(15)

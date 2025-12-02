@@ -6,6 +6,7 @@ import { Clock } from "lucide-react";
 interface BidCountdownTimerProps {
   timerSeconds: number;
   lastBidTime: Date | null;
+  currentPlayerSetAt: Date | null;
   auctionStatus: string;
   variant?: "default" | "compact" | "large";
 }
@@ -13,6 +14,7 @@ interface BidCountdownTimerProps {
 export function BidCountdownTimer({
   timerSeconds,
   lastBidTime,
+  currentPlayerSetAt,
   auctionStatus,
   variant = "default",
 }: BidCountdownTimerProps) {
@@ -25,15 +27,18 @@ export function BidCountdownTimer({
       return;
     }
 
-    // Calculate time remaining based on last bid time
+    // Calculate time remaining based on last bid time or when player was set
     const calculateTimeRemaining = () => {
-      if (!lastBidTime) {
+      // Use lastBidTime if available, otherwise use when current player was set
+      const referenceTime = lastBidTime || currentPlayerSetAt;
+
+      if (!referenceTime) {
         return timerSeconds;
       }
 
       const now = new Date();
-      const lastBid = new Date(lastBidTime);
-      const elapsedSeconds = Math.floor((now.getTime() - lastBid.getTime()) / 1000);
+      const reference = new Date(referenceTime);
+      const elapsedSeconds = Math.floor((now.getTime() - reference.getTime()) / 1000);
       const remaining = Math.max(0, timerSeconds - elapsedSeconds);
 
       return remaining;
@@ -49,7 +54,7 @@ export function BidCountdownTimer({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [lastBidTime, timerSeconds, auctionStatus]);
+  }, [lastBidTime, currentPlayerSetAt, timerSeconds, auctionStatus]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {

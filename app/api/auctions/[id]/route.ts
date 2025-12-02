@@ -111,6 +111,8 @@ export async function PATCH(
     }
     if (currentPlayerId !== undefined) {
       updateData.currentPlayerId = currentPlayerId;
+      // Set timestamp when current player changes
+      updateData.currentPlayerSetAt = new Date();
     }
 
     const auction = await prisma.auction.update({
