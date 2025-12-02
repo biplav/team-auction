@@ -180,14 +180,28 @@ export default function PlayersPage() {
           fileInputRef.current.value = "";
         }
 
-        // Show detailed success message with pricing info
-        let message = `Successfully uploaded ${data.count} players!`;
+        // Show detailed success message with created/updated and pricing info
+        let message = `Successfully processed ${data.count} players!`;
+
+        // Show created vs updated breakdown
+        if (data.createdCount > 0 && data.updatedCount > 0) {
+          message += `\n\n✓ ${data.createdCount} new player(s) created`;
+          message += `\n✓ ${data.updatedCount} existing player(s) updated`;
+        } else if (data.createdCount > 0) {
+          message += `\n\n✓ ${data.createdCount} new player(s) created`;
+        } else if (data.updatedCount > 0) {
+          message += `\n\n✓ ${data.updatedCount} existing player(s) updated`;
+        }
+
+        // Show pricing info
         if (data.playersUsingDefault > 0) {
           message += `\n\n${data.playersUsingDefault} player(s) using default price: ₹${data.defaultPriceUsed.toLocaleString()}`;
         }
         if (data.playersWithSpecifiedPrice > 0) {
           message += `\n${data.playersWithSpecifiedPrice} player(s) with custom prices`;
         }
+
+        message += `\n\nℹ️ Players are matched by phone number - duplicates will be updated.`;
         alert(message);
       } else {
         if (data.validationErrors) {
@@ -412,8 +426,14 @@ export default function PlayersPage() {
       [""],
       ["Required Columns:"],
       ["  - name: Player's full name"],
-      ["  - phoneNumber: Contact number"],
+      ["  - phoneNumber: Contact number (UNIQUE - used to identify and update existing players)"],
       ["  - role: BATSMAN, BOWLER, ALL_ROUNDER, or WICKET_KEEPER"],
+      [""],
+      ["IMPORTANT - Phone Number Matching:"],
+      ["  - Phone numbers are UNIQUE identifiers"],
+      ["  - If a player with the same phone number exists, their data will be UPDATED"],
+      ["  - If no match found, a NEW player will be created"],
+      ["  - This allows you to re-upload the same Excel to update player information"],
       [""],
       ["Optional Columns:"],
       [`  - basePrice: Starting auction price (leave empty to use default: ₹${defaultPrice.toLocaleString()})`],
@@ -477,7 +497,7 @@ export default function PlayersPage() {
                 <h3 className="font-semibold mb-2">Required Columns:</h3>
                 <ul className="list-disc list-inside space-y-1 text-sm">
                   <li><strong>name</strong> or <strong>Player Name</strong> - Player's full name</li>
-                  <li><strong>phoneNumber</strong> or <strong>Phone Number</strong> - Contact number</li>
+                  <li><strong>phoneNumber</strong> or <strong>Phone Number</strong> - Contact number (unique identifier - updates existing player if match found)</li>
                   <li><strong>role</strong> - One of: BATSMAN, BOWLER, ALL_ROUNDER, WICKET_KEEPER</li>
                 </ul>
                 <h3 className="font-semibold mt-3 mb-2">Optional Columns:</h3>

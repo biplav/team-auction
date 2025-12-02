@@ -150,17 +150,44 @@ export async function POST(request: NextRequest) {
     // Determine default base price (fallback to ₹5L if auction's minPlayerPrice is 0)
     const defaultBasePrice = auction.minPlayerPrice || 500000;
 
+    // Fetch existing players in this auction to check for duplicates by phone number
+    const existingPlayers = await prisma.player.findMany({
+      where: { auctionId },
+      select: {
+        id: true,
+        stats: true,
+      },
+    });
+
+    // Build a map of phoneNumber -> playerId for quick lookup
+    const phoneToPlayerMap = new Map<string, string>();
+    existingPlayers.forEach(player => {
+      if (player.stats && typeof player.stats === 'object') {
+        const stats = player.stats as any;
+        if (stats.phoneNumber) {
+          const normalizedPhone = stats.phoneNumber.toString().trim();
+          phoneToPlayerMap.set(normalizedPhone, player.id);
+        }
+      }
+    });
+
     // Validate all rows first and collect pricing info
     const allErrors: ValidationError[] = [];
-    const playerPriceInfo: Array<{ player: PlayerRow, finalPrice: number, usingDefault: boolean }> = [];
+    const playerPriceInfo: Array<{ player: PlayerRow, finalPrice: number, usingDefault: boolean, existingPlayerId?: string }> = [];
 
     players.forEach((player, index) => {
       const result = validateRow(player, index + 2, defaultBasePrice); // +2 because row 1 is header, array is 0-indexed
       allErrors.push(...result.errors);
+
+      // Check if player exists by phone number
+      const normalizedPhone = player.phoneNumber.toString().trim();
+      const existingPlayerId = phoneToPlayerMap.get(normalizedPhone);
+
       playerPriceInfo.push({
         player,
         finalPrice: result.finalPrice,
         usingDefault: result.usingDefault,
+        existingPlayerId,
       });
     });
 
@@ -177,23 +204,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // All validations passed, now create players with determined prices
-    const createdPlayers = await prisma.$transaction(
-      playerPriceInfo.map(({ player, finalPrice }) => {
+    // All validations passed, now upsert players (update if exists, create if not)
+    let createdCount = 0;
+    let updatedCount = 0;
+
+    const upsertedPlayers = await prisma.$transaction(
+      playerPriceInfo.map(({ player, finalPrice, existingPlayerId }) => {
         const { name, phoneNumber, role, basePrice, ...otherFields } = player;
 
-        return prisma.player.create({
-          data: {
-            name: name.trim(),
-            role: normalizeRole(role),
-            basePrice: finalPrice,
-            auctionId,
-            stats: {
-              phoneNumber: phoneNumber.toString().trim(),
-              ...otherFields,
+        if (existingPlayerId) {
+          // Update existing player
+          updatedCount++;
+          return prisma.player.update({
+            where: { id: existingPlayerId },
+            data: {
+              name: name.trim(),
+              role: normalizeRole(role),
+              basePrice: finalPrice,
+              stats: {
+                phoneNumber: phoneNumber.toString().trim(),
+                ...otherFields,
+              },
             },
-          },
-        });
+          });
+        } else {
+          // Create new player
+          createdCount++;
+          return prisma.player.create({
+            data: {
+              name: name.trim(),
+              role: normalizeRole(role),
+              basePrice: finalPrice,
+              auctionId,
+              stats: {
+                phoneNumber: phoneNumber.toString().trim(),
+                ...otherFields,
+              },
+            },
+          });
+        }
       })
     );
 
@@ -202,12 +251,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Successfully uploaded ${createdPlayers.length} players`,
-      count: createdPlayers.length,
+      message: `Successfully processed ${upsertedPlayers.length} players (${createdCount} created, ${updatedCount} updated)`,
+      count: upsertedPlayers.length,
+      createdCount,
+      updatedCount,
       defaultPriceUsed: defaultBasePrice,
       playersUsingDefault: playersUsingDefault,
-      playersWithSpecifiedPrice: createdPlayers.length - playersUsingDefault,
-      players: createdPlayers,
+      playersWithSpecifiedPrice: upsertedPlayers.length - playersUsingDefault,
+      players: upsertedPlayers,
     }, { status: 201 });
   } catch (error) {
     console.error("Error bulk uploading players:", error);
