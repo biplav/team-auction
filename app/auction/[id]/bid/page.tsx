@@ -797,28 +797,28 @@ export default function BiddingPage() {
                     {/* Quick Bid Buttons - Desktop Only */}
                     <div className="grid grid-cols-3 gap-2">
                       <Button
-                        onClick={() => quickBid(50000)}
+                        onClick={() => quickBid(bidIncrement)}
                         variant="outline"
                         size="sm"
                         disabled={submitting}
                       >
-                        +50K
+                        +1x
                       </Button>
                       <Button
-                        onClick={() => quickBid(100000)}
+                        onClick={() => quickBid(bidIncrement * 2)}
                         variant="outline"
                         size="sm"
                         disabled={submitting}
                       >
-                        +1L
+                        +2x
                       </Button>
                       <Button
-                        onClick={() => quickBid(200000)}
+                        onClick={() => quickBid(bidIncrement * 3)}
                         variant="outline"
                         size="sm"
                         disabled={submitting}
                       >
-                        +2L
+                        +3x
                       </Button>
                     </div>
 
@@ -1083,22 +1083,22 @@ export default function BiddingPage() {
                 <Minus className="h-5 w-5" />
               </Button>
               <Button
-                onClick={() => quickBid(50000)}
+                onClick={() => quickBid(bidIncrement)}
                 variant="outline"
                 size="lg"
                 disabled={submitting}
                 className="h-12 text-sm font-bold"
               >
-                +50K
+                +1x
               </Button>
               <Button
-                onClick={() => quickBid(100000)}
+                onClick={() => quickBid(bidIncrement * 2)}
                 variant="outline"
                 size="lg"
                 disabled={submitting}
                 className="h-12 text-sm font-bold"
               >
-                +1L
+                +2x
               </Button>
               <Button
                 onClick={increaseBid}
