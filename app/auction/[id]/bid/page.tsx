@@ -169,8 +169,54 @@ export default function BiddingPage() {
     });
 
     socketInstance.on("connect", () => {
-      console.log("[DEBUG] Connected to socket server");
+      console.log("[DEBUG] ✅ Connected to socket server", {
+        socketId: socketInstance.id,
+        timestamp: new Date().toISOString(),
+        tabHidden: document.hidden
+      });
       socketInstance.emit("join-auction", auctionId);
+    });
+
+    socketInstance.on("disconnect", (reason) => {
+      console.log("[DEBUG] ❌ Socket disconnected", {
+        reason,
+        timestamp: new Date().toISOString(),
+        tabHidden: document.hidden
+      });
+    });
+
+    socketInstance.on("connect_error", (error) => {
+      console.error("[DEBUG] ❌ Socket connection error", {
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    socketInstance.on("reconnect", (attemptNumber) => {
+      console.log("[DEBUG] 🔄 Socket reconnected", {
+        attemptNumber,
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    socketInstance.on("reconnect_attempt", (attemptNumber) => {
+      console.log("[DEBUG] 🔄 Socket reconnection attempt", {
+        attemptNumber,
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    socketInstance.on("reconnect_error", (error) => {
+      console.error("[DEBUG] ❌ Socket reconnection error", {
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    socketInstance.on("reconnect_failed", () => {
+      console.error("[DEBUG] ❌ Socket reconnection failed", {
+        timestamp: new Date().toISOString()
+      });
     });
 
     socketInstance.on("bid-placed", (data) => {
@@ -270,7 +316,18 @@ export default function BiddingPage() {
 
     setSocket(socketInstance);
 
+    // Periodic socket connection check (every 5 seconds)
+    const connectionCheckInterval = setInterval(() => {
+      console.log("[DEBUG] 🔍 Socket status check", {
+        connected: socketInstance.connected,
+        socketId: socketInstance.id,
+        tabHidden: document.hidden,
+        timestamp: new Date().toISOString()
+      });
+    }, 5000);
+
     return () => {
+      clearInterval(connectionCheckInterval);
       socketInstance.emit("leave-auction", auctionId);
       socketInstance.disconnect();
     };
