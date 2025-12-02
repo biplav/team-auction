@@ -38,6 +38,14 @@ ENV NODE_ENV production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Copy package.json for socket.io installation
+COPY --from=builder /app/package.json ./package.json
+
+# Install only production dependencies needed for custom server
+# Standalone build doesn't include socket.io since it's only used in server.js
+RUN npm install --production --no-optional socket.io && \
+    rm -rf /root/.npm
+
 # Copy necessary files
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
