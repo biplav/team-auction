@@ -620,7 +620,7 @@ export default function BiddingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 pb-32 md:pb-8 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 pb-[420px] md:pb-8 md:p-8">
       <div className="max-w-5xl mx-auto">
         {/* Sticky Header for Mobile */}
         <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm shadow-sm p-4 mb-4 md:relative md:bg-transparent md:shadow-none md:p-0">
