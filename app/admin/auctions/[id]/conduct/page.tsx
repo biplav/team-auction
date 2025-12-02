@@ -99,7 +99,8 @@ export default function ConductAuctionPage() {
 
   const unsoldPlayers = players.filter((p) => p.status === "UNSOLD");
   const soldPlayers = players.filter((p) => p.status === "SOLD");
-  const bidIncrement = 50000; // 50k increment
+  // Use auction's minimum bid increment setting (fallback to 50k for backward compatibility)
+  const bidIncrement = auction?.minBidIncrement ?? 50000;
 
   // Initialize admin bid amount when player or bids change
   useEffect(() => {
