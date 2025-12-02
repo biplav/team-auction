@@ -19,21 +19,16 @@
 #   - Add: dockerfilePath = "Dockerfile.socket"
 
 [build]
-builder = "NIXPACKS"
-# For Docker builds, use:
-# builder = "DOCKERFILE"
-# dockerfilePath = "Dockerfile.socket"  # or "Dockerfile" for full app
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "node socket-server.js"
+startCommand = "node server.js"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
-[env]
-PORT = "3001"
-# Set CORS_ORIGIN to your frontend URL in Railway dashboard
-# Example: CORS_ORIGIN=https://your-app.vercel.app
-# For full app deployment, also add:
-# DATABASE_URL=postgresql://...
-# NEXTAUTH_SECRET=...
-# NEXTAUTH_URL=https://your-railway-app.up.railway.app
+# Required environment variables - Set these in Railway dashboard:
+# - DATABASE_URL: Your CockroachDB connection string
+# - NEXTAUTH_SECRET: Generate with: openssl rand -base64 32
+# - NEXTAUTH_URL: Your Railway app URL (e.g., https://your-app.up.railway.app)
+# - PORT: Will be auto-set by Railway (default: 3000)

@@ -14,15 +14,19 @@ RUN npm ci
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
+
+# Accept DATABASE_URL as build argument (needed for Prisma generate)
+# Railway will provide this from environment variables
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma Client
+# Generate Prisma Client (requires DATABASE_URL to be set, but doesn't connect)
 RUN npx prisma generate
 
 # Build Next.js
-# This will use the default .env file, but production values
-# should be provided via environment variables at runtime
 RUN npm run build
 
 # Production image, copy all the files and run next
@@ -40,6 +44,7 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/server.js ./server.js
 
 USER nextjs
 
