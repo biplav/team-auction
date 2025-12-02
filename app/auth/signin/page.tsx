@@ -12,8 +12,8 @@ export default function SignInPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
-  const [email, setEmail] = useState("admin@cricauction.com");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -112,11 +112,6 @@ export default function SignInPage() {
               {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded text-sm">
-            <p className="font-semibold mb-2">Default Credentials:</p>
-            <p>📧 Email: <code>admin@cricauction.com</code></p>
-            <p>🔑 Password: <code>admin123</code></p>
-          </div>
         </CardContent>
       </Card>
     </div>
