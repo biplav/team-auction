@@ -88,7 +88,7 @@ function SignInForm() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@cricauction.com"
+                placeholder="your.email@example.com"
                 required
               />
             </div>
