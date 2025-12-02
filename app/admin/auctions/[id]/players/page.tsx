@@ -429,6 +429,17 @@ export default function PlayersPage() {
       ["  - phoneNumber: Contact number (UNIQUE - used to identify and update existing players)"],
       ["  - role: BATSMAN, BOWLER, ALL_ROUNDER, or WICKET_KEEPER"],
       [""],
+      ["SMART ROLE PARSING:"],
+      ["  - You can enter MULTIPLE roles separated by commas (e.g., 'Batsman, Bowler')"],
+      ["  - System intelligently determines the best role using priority:"],
+      ["    1. Wicket Keeper (highest priority) - if mentioned, always selected"],
+      ["    2. All Rounder - if explicitly mentioned OR if both Batsman AND Bowler present"],
+      ["    3. Single role - Batsman or Bowler"],
+      ["  - Examples:"],
+      ["    'Batsman, Bowler' → ALL_ROUNDER"],
+      ["    'Wicket Keeper, Batsman' → WICKET_KEEPER"],
+      ["    'All Rounder, Bowler' → ALL_ROUNDER"],
+      [""],
       ["IMPORTANT - Phone Number Matching:"],
       ["  - Phone numbers are UNIQUE identifiers"],
       ["  - If a player with the same phone number exists, their data will be UPDATED"],
@@ -498,7 +509,13 @@ export default function PlayersPage() {
                 <ul className="list-disc list-inside space-y-1 text-sm">
                   <li><strong>name</strong> or <strong>Player Name</strong> - Player's full name</li>
                   <li><strong>phoneNumber</strong> or <strong>Phone Number</strong> - Contact number (unique identifier - updates existing player if match found)</li>
-                  <li><strong>role</strong> - One of: BATSMAN, BOWLER, ALL_ROUNDER, WICKET_KEEPER</li>
+                  <li>
+                    <strong>role</strong> - Single or multiple: BATSMAN, BOWLER, ALL_ROUNDER, WICKET_KEEPER
+                    <br/>
+                    <span className="text-xs text-gray-600 ml-4">
+                      💡 Can use multiple (e.g., "Batsman, Bowler" → ALL_ROUNDER). Priority: Wicket Keeper &gt; All Rounder &gt; Single role
+                    </span>
+                  </li>
                 </ul>
                 <h3 className="font-semibold mt-3 mb-2">Optional Columns:</h3>
                 <ul className="list-disc list-inside space-y-1 text-sm">

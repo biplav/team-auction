@@ -22,14 +22,63 @@ interface ValidationError {
   message: string;
 }
 
+/**
+ * Parses role field which may contain multiple roles separated by commas or other delimiters
+ * Priority: WICKET_KEEPER > ALL_ROUNDER > (BATSMAN + BOWLER = ALL_ROUNDER) > Single Role
+ */
+function parseRole(roleInput: string): PlayerRole {
+  if (!roleInput) return "BATSMAN"; // Default fallback
+
+  // Normalize: uppercase and split by common delimiters
+  const normalizedInput = roleInput.toUpperCase();
+  const roles = normalizedInput.split(/[,|/&+]/).map(r => r.trim().replace(/\s+/g, "_"));
+
+  // Check for WICKET_KEEPER (highest priority)
+  if (roles.some(r => r.includes("WICKET") || r.includes("KEEPER") || r === "WK")) {
+    return "WICKET_KEEPER";
+  }
+
+  // Check for ALL_ROUNDER
+  if (roles.some(r => r.includes("ALL") && r.includes("ROUNDER"))) {
+    return "ALL_ROUNDER";
+  }
+
+  // Check if both BATSMAN and BOWLER are present
+  const hasBatsman = roles.some(r => r.includes("BAT"));
+  const hasBowler = roles.some(r => r.includes("BOWL"));
+
+  if (hasBatsman && hasBowler) {
+    return "ALL_ROUNDER";
+  }
+
+  // Single role detection
+  if (hasBatsman) return "BATSMAN";
+  if (hasBowler) return "BOWLER";
+
+  // Fallback to first role or default
+  const firstRole = roles[0];
+  if (firstRole.includes("BAT")) return "BATSMAN";
+  if (firstRole.includes("BOWL")) return "BOWLER";
+  if (firstRole.includes("ALL")) return "ALL_ROUNDER";
+  if (firstRole.includes("WICKET") || firstRole.includes("KEEPER")) return "WICKET_KEEPER";
+
+  return "BATSMAN"; // Final fallback
+}
+
 function validatePlayerRole(role: string): boolean {
-  const validRoles = ["BATSMAN", "BOWLER", "ALL_ROUNDER", "WICKET_KEEPER"];
-  return validRoles.includes(role.toUpperCase().replace(/\s+/g, "_"));
+  // After parsing, any role input should be valid
+  // We'll validate the parsed result
+  try {
+    const parsed = parseRole(role);
+    const validRoles = ["BATSMAN", "BOWLER", "ALL_ROUNDER", "WICKET_KEEPER"];
+    return validRoles.includes(parsed);
+  } catch {
+    return false;
+  }
 }
 
 function normalizeRole(role: string): PlayerRole {
-  const normalized = role.toUpperCase().replace(/\s+/g, "_");
-  return normalized as PlayerRole;
+  return parseRole(role);
 }
 
 function validateRow(row: PlayerRow, rowIndex: number, defaultBasePrice: number): { errors: ValidationError[], finalPrice: number, usingDefault: boolean } {
