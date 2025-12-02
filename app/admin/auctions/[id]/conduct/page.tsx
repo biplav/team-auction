@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Play, Pause, SkipForward, Gavel, XCircle, Trash2, Plus, Minus, AlertTriangle } from "lucide-react";
 import Link from "next/link";
-import io, { Socket } from "socket.io-client";
+import { Socket } from "socket.io-client";
+import { createSocketClient } from "@/lib/socket-client";
 import confetti from "canvas-confetti";
 import { getDisplayablePlayerStats } from "@/lib/utils/player-utils";
 import { BidCountdownTimer } from "@/components/BidCountdownTimer";
@@ -112,9 +113,7 @@ export default function ConductAuctionPage() {
     fetchData(true); // Show loader on initial load
 
     // Initialize socket connection
-    const socketInstance = io({
-      path: "/api/socket",
-    });
+    const socketInstance = createSocketClient();
 
     socketInstance.on("connect", () => {
       console.log("Connected to socket server");

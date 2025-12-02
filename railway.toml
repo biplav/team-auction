@@ -1,0 +1,39 @@
+# Railway.app configuration
+#
+# DEPLOYMENT OPTIONS:
+#
+# Option 1: Standalone Socket.io Server (Recommended for Vercel + Railway setup)
+#   - Uses: socket-server.js (no database, lightweight)
+#   - Use Nixpacks builder (current config)
+#   - Start command: node socket-server.js
+#
+# Option 2: Full Next.js App with Socket.io
+#   - Uses: Dockerfile (includes database, Next.js, Socket.io)
+#   - Change builder to: builder = "DOCKERFILE"
+#   - Dockerfile: Use main Dockerfile
+#   - Requires: DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL env vars
+#
+# Option 3: Socket Server with Docker
+#   - Uses: Dockerfile.socket (lightweight, Docker-based)
+#   - Change builder to: builder = "DOCKERFILE"
+#   - Add: dockerfilePath = "Dockerfile.socket"
+
+[build]
+builder = "NIXPACKS"
+# For Docker builds, use:
+# builder = "DOCKERFILE"
+# dockerfilePath = "Dockerfile.socket"  # or "Dockerfile" for full app
+
+[deploy]
+startCommand = "node socket-server.js"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[env]
+PORT = "3001"
+# Set CORS_ORIGIN to your frontend URL in Railway dashboard
+# Example: CORS_ORIGIN=https://your-app.vercel.app
+# For full app deployment, also add:
+# DATABASE_URL=postgresql://...
+# NEXTAUTH_SECRET=...
+# NEXTAUTH_URL=https://your-railway-app.up.railway.app

@@ -5,7 +5,8 @@ import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import io, { Socket } from "socket.io-client";
+import { Socket } from "socket.io-client";
+import { createSocketClient } from "@/lib/socket-client";
 import confetti from "canvas-confetti";
 import { getDisplayablePlayerStats } from "@/lib/utils/player-utils";
 import { BidCountdownTimer } from "@/components/BidCountdownTimer";
@@ -115,9 +116,7 @@ export default function AuctionDisplayPage() {
 
   useEffect(() => {
     // Initialize socket connection
-    const socketInstance = io({
-      path: "/api/socket",
-    });
+    const socketInstance = createSocketClient();
 
     socketInstance.on("connect", () => {
       console.log("Connected to socket server");

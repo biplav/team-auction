@@ -1,13 +1,14 @@
 # Multi-stage build for production
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package files
+# Copy package files AND prisma schema (needed for postinstall script)
 COPY package.json package-lock.json* ./
+COPY prisma ./prisma
 RUN npm ci
 
 # Rebuild the source code only when needed

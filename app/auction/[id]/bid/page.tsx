@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Minus, AlertTriangle } from "lucide-react";
-import io, { Socket } from "socket.io-client";
+import { Socket } from "socket.io-client";
+import { createSocketClient } from "@/lib/socket-client";
 import { canAffordPlayer, formatCurrency as formatCurrencyUtil } from "@/lib/budget";
 import confetti from "canvas-confetti";
 import { BidCountdownTimer } from "@/components/BidCountdownTimer";
@@ -164,9 +165,7 @@ export default function BiddingPage() {
 
   useEffect(() => {
     // Initialize socket connection
-    const socketInstance = io({
-      path: "/api/socket",
-    });
+    const socketInstance = createSocketClient();
 
     socketInstance.on("connect", () => {
       console.log("[DEBUG] ✅ Connected to socket server", {

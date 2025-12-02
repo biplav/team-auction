@@ -1,0 +1,25 @@
+# Lightweight Dockerfile for standalone Socket.io server
+# This is ideal for deploying just the real-time server to Railway
+# No Prisma, no Next.js - just Socket.io
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install only production dependencies for socket.io
+RUN npm install --production --ignore-scripts socket.io
+
+# Copy the socket server file
+COPY socket-server.js ./
+
+# Expose the port
+EXPOSE 3001
+
+ENV PORT=3001
+ENV NODE_ENV=production
+
+# Run the socket server
+CMD ["node", "socket-server.js"]

@@ -2,6 +2,10 @@
   "name": "cricket-auction",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.9.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "dev": "node server.js",
     "build": "prisma generate && next build",
