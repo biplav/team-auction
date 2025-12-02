@@ -4,8 +4,9 @@ const next = require('next');
 const { Server } = require('socket.io');
 
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = 'localhost';
-const port = 3000;
+// Use Railway's environment variables, fallback to localhost for development
+const hostname = process.env.HOSTNAME || 'localhost';
+const port = parseInt(process.env.PORT || '3000', 10);
 
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
@@ -85,9 +86,13 @@ app.prepare().then(() => {
     });
   });
 
-  httpServer.listen(port, (err) => {
+  // Listen on all network interfaces (0.0.0.0) for Railway/Docker
+  const listenHost = process.env.NODE_ENV === 'production' ? '0.0.0.0' : hostname;
+
+  httpServer.listen(port, listenHost, (err) => {
     if (err) throw err;
-    console.log(`🚀 Next.js ready on http://${hostname}:${port}`);
+    console.log(`🚀 Next.js ready on http://${listenHost}:${port}`);
     console.log(`🔌 Socket.IO server ready on path /api/socket`);
+    console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   });
 });
