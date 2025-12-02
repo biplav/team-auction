@@ -22,6 +22,7 @@ interface Auction {
   minPlayersPerTeam: number;
   minPlayerPrice: number;
   minBidIncrement: number;
+  bidTimerSeconds: number;
   createdAt: string;
   _count: {
     teams: number;
@@ -55,6 +56,7 @@ export default function AuctionsPage() {
     minPlayersPerTeam: 11,
     minPlayerPrice: 0,
     minBidIncrement: 50000,
+    bidTimerSeconds: 90,
   });
   const [editFormData, setEditFormData] = useState({
     name: "",
@@ -65,6 +67,7 @@ export default function AuctionsPage() {
     minPlayersPerTeam: 11,
     minPlayerPrice: 0,
     minBidIncrement: 50000,
+    bidTimerSeconds: 90,
   });
 
   useEffect(() => {
@@ -109,6 +112,7 @@ export default function AuctionsPage() {
           minPlayersPerTeam: formData.minPlayersPerTeam,
           minPlayerPrice: formData.minPlayerPrice,
           minBidIncrement: formData.minBidIncrement,
+          bidTimerSeconds: formData.bidTimerSeconds,
         }),
       });
 
@@ -123,6 +127,7 @@ export default function AuctionsPage() {
           minPlayersPerTeam: 11,
           minPlayerPrice: 0,
           minBidIncrement: 50000,
+          bidTimerSeconds: 90,
         });
         fetchAuctions();
       } else {
@@ -149,6 +154,7 @@ export default function AuctionsPage() {
       minPlayersPerTeam: auction.minPlayersPerTeam,
       minPlayerPrice: auction.minPlayerPrice,
       minBidIncrement: auction.minBidIncrement,
+      bidTimerSeconds: auction.bidTimerSeconds,
     });
     setEditOpen(true);
   };
@@ -180,6 +186,7 @@ export default function AuctionsPage() {
           minPlayersPerTeam: editFormData.minPlayersPerTeam,
           minPlayerPrice: editFormData.minPlayerPrice,
           minBidIncrement: editFormData.minBidIncrement,
+          bidTimerSeconds: editFormData.bidTimerSeconds,
         }),
       });
 
@@ -346,6 +353,22 @@ export default function AuctionsPage() {
                   Minimum amount by which bids must increase (e.g., ₹50,000)
                 </p>
               </div>
+              <div>
+                <Label htmlFor="bidTimerSeconds">Bid Timer (seconds)</Label>
+                <Input
+                  id="bidTimerSeconds"
+                  type="number"
+                  min="30"
+                  max="300"
+                  step="10"
+                  value={formData.bidTimerSeconds}
+                  onChange={(e) => setFormData({ ...formData, bidTimerSeconds: parseInt(e.target.value) })}
+                  required
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Indicative countdown timer since last bid (default: 90 seconds)
+                </p>
+              </div>
               <div className="flex gap-2 justify-end">
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                   Cancel
@@ -477,6 +500,22 @@ export default function AuctionsPage() {
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Minimum amount by which bids must increase (e.g., ₹50,000)
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="edit-bidTimerSeconds">Bid Timer (seconds)</Label>
+                <Input
+                  id="edit-bidTimerSeconds"
+                  type="number"
+                  min="30"
+                  max="300"
+                  step="10"
+                  value={editFormData.bidTimerSeconds}
+                  onChange={(e) => setEditFormData({ ...editFormData, bidTimerSeconds: parseInt(e.target.value) })}
+                  required
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Indicative countdown timer since last bid (default: 90 seconds)
                 </p>
               </div>
               <div className="flex gap-2 justify-end">

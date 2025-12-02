@@ -12,6 +12,7 @@ import { Plus, Minus, AlertTriangle } from "lucide-react";
 import io, { Socket } from "socket.io-client";
 import { canAffordPlayer, formatCurrency as formatCurrencyUtil } from "@/lib/budget";
 import confetti from "canvas-confetti";
+import { BidCountdownTimer } from "@/components/BidCountdownTimer";
 
 interface Player {
   id: string;
@@ -51,6 +52,7 @@ interface Auction {
   minPlayersPerTeam: number;
   maxPlayersPerTeam: number;
   minPlayerPrice: number;
+  bidTimerSeconds: number;
   teams?: Team[];
 }
 
@@ -545,8 +547,21 @@ export default function BiddingPage() {
               </CardContent>
             </Card>
 
+            {auction && auction.status === "IN_PROGRESS" && currentPlayer && currentPlayer.status !== "SOLD" && (
+              <Card className="hidden md:block mt-6">
+                <CardContent className="pt-6">
+                  <BidCountdownTimer
+                    timerSeconds={auction.bidTimerSeconds}
+                    lastBidTime={highestBid ? new Date(highestBid.createdAt) : null}
+                    auctionStatus={auction.status}
+                    variant="default"
+                  />
+                </CardContent>
+              </Card>
+            )}
+
             {auction?.status === "IN_PROGRESS" && currentPlayer && currentPlayer.status !== "SOLD" && (
-              <Card className="hidden md:block">
+              <Card className="hidden md:block mt-6">
                 <CardHeader>
                   <CardTitle>Place Your Bid</CardTitle>
                   <CardDescription>Bid for {currentPlayer.name}</CardDescription>
@@ -834,6 +849,18 @@ export default function BiddingPage() {
       {auction?.status === "IN_PROGRESS" && currentPlayer && currentPlayer.status !== "SOLD" && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white border-t-2 border-gray-200 shadow-2xl">
           <div className="p-4 space-y-3">
+            {/* Countdown Timer - Mobile Compact */}
+            {auction && (
+              <div className="flex justify-center">
+                <BidCountdownTimer
+                  timerSeconds={auction.bidTimerSeconds}
+                  lastBidTime={highestBid ? new Date(highestBid.createdAt) : null}
+                  auctionStatus={auction.status}
+                  variant="compact"
+                />
+              </div>
+            )}
+
             {/* Current Bid Display */}
             <div className="flex justify-between items-center">
               <div>

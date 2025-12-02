@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, sport, maxTeams, maxPlayersPerTeam, minPlayersPerTeam, minPlayerPrice, minBidIncrement } = body;
+    const { name, sport, maxTeams, maxPlayersPerTeam, minPlayersPerTeam, minPlayerPrice, minBidIncrement, bidTimerSeconds } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
         minPlayersPerTeam: minPlayersPerTeam || 11,
         minPlayerPrice: minPlayerPrice || 0,
         minBidIncrement: minBidIncrement || 50000,
+        bidTimerSeconds: bidTimerSeconds || 90,
         status: "NOT_STARTED",
       },
     });

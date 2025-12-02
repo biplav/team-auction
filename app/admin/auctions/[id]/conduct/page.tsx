@@ -14,6 +14,7 @@ import Link from "next/link";
 import io, { Socket } from "socket.io-client";
 import confetti from "canvas-confetti";
 import { getDisplayablePlayerStats } from "@/lib/utils/player-utils";
+import { BidCountdownTimer } from "@/components/BidCountdownTimer";
 
 interface Player {
   id: string;
@@ -63,6 +64,7 @@ interface Auction {
   minPlayersPerTeam: number;
   maxPlayersPerTeam: number;
   minPlayerPrice: number;
+  bidTimerSeconds: number;
 }
 
 interface SoldPlayerData {
@@ -878,6 +880,19 @@ export default function ConductAuctionPage() {
               )}
             </CardContent>
           </Card>
+
+          {auction && auction.status === "IN_PROGRESS" && currentPlayer && currentPlayer.status !== "SOLD" && (
+            <Card>
+              <CardContent className="pt-6">
+                <BidCountdownTimer
+                  timerSeconds={auction.bidTimerSeconds}
+                  lastBidTime={highestBid ? new Date(highestBid.createdAt) : null}
+                  auctionStatus={auction.status}
+                  variant="default"
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {auction?.status === "IN_PROGRESS" && currentPlayer && currentPlayer.status !== "SOLD" && (
             <Card>

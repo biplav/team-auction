@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import io, { Socket } from "socket.io-client";
 import confetti from "canvas-confetti";
 import { getDisplayablePlayerStats } from "@/lib/utils/player-utils";
+import { BidCountdownTimer } from "@/components/BidCountdownTimer";
 
 interface Player {
   id: string;
@@ -62,6 +63,7 @@ interface Auction {
   name: string;
   status: string;
   currentPlayerId: string | null;
+  bidTimerSeconds: number;
 }
 
 export default function AuctionDisplayPage() {
@@ -424,6 +426,17 @@ export default function AuctionDisplayPage() {
                         )}
                       </div>
                     </div>
+
+                    {auction && (
+                      <div className="mt-6">
+                        <BidCountdownTimer
+                          timerSeconds={auction.bidTimerSeconds}
+                          lastBidTime={highestBid ? new Date(highestBid.createdAt) : null}
+                          auctionStatus={auction.status}
+                          variant="large"
+                        />
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-16 text-gray-500">
