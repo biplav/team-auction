@@ -2,11 +2,10 @@ import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import prisma from "./prisma"
+import { authConfig } from "./auth.config"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  // Trust host for Railway/Vercel deployment (reads from AUTH_TRUST_HOST env var)
-  trustHost: true,
-
+  ...authConfig,
   providers: [
     Credentials({
       name: "Credentials",
@@ -47,27 +46,4 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
     })
   ],
-  callbacks: {
-    async session({ session, token }) {
-      if (token && session.user) {
-        session.user.id = token.id as string
-        session.user.role = token.role as string
-      }
-      return session
-    },
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id!
-        token.role = (user as any).role
-      }
-      return token
-    }
-  },
-  pages: {
-    signIn: '/auth/signin',
-  },
-  session: {
-    strategy: "jwt"
-  },
-  secret: process.env.NEXTAUTH_SECRET,
 })
