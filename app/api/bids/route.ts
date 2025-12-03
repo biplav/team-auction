@@ -162,11 +162,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+    // No authentication required - bids are public for display page
     const { searchParams } = new URL(request.url);
     const playerId = searchParams.get("playerId");
     const teamId = searchParams.get("teamId");
