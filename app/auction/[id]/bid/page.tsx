@@ -245,7 +245,10 @@ export default function BiddingPage() {
 
     socketInstance.on("current-player-changed", (data) => {
       console.log("Player changed:", data);
-      fetchCurrentPlayer(data.playerId);
+      if (data.playerId) {
+        fetchCurrentPlayer(data.playerId);
+        fetchData(false); // Refresh auction state and team budgets
+      }
     });
 
     socketInstance.on("player-sold", (data) => {
