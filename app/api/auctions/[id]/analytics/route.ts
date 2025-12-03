@@ -179,6 +179,37 @@ export async function GET(
     // Total bids count
     const totalBids = bids.length;
 
+    // Calculate most popular player (player with bids from most unique teams)
+    const playerBidStats = bids.reduce((acc: Record<string, Set<string>>, bid) => {
+      const playerId = bid.player.id;
+      if (!acc[playerId]) {
+        acc[playerId] = new Set();
+      }
+      acc[playerId].add(bid.team.id);
+      return acc;
+    }, {});
+
+    let mostPopularPlayer = null;
+    let maxUniqueTeams = 0;
+
+    for (const [playerId, teamSet] of Object.entries(playerBidStats)) {
+      const uniqueTeamsCount = teamSet.size;
+      if (uniqueTeamsCount > maxUniqueTeams) {
+        maxUniqueTeams = uniqueTeamsCount;
+        const player = players.find((p: PlayerWithTeam) => p.id === playerId);
+        if (player && player.status === "SOLD") {
+          mostPopularPlayer = {
+            id: player.id,
+            name: player.name,
+            role: player.role,
+            soldPrice: player.soldPrice,
+            uniqueTeamsCount: uniqueTeamsCount,
+            teamName: player.team?.name || "N/A",
+          };
+        }
+      }
+    }
+
     return NextResponse.json({
       auction: {
         id: auction.id,
@@ -198,6 +229,7 @@ export async function GET(
       priceRanges,
       teamStats,
       mostExpensivePlayers,
+      mostPopularPlayer,
       unsoldPlayers: unsoldPlayersList,
       recentActivity,
     });

@@ -83,9 +83,11 @@ export default function AuctionDisplayPage() {
   const [showSoldAnimation, setShowSoldAnimation] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [loadingTeamPlayers, setLoadingTeamPlayers] = useState(false);
+  const [analytics, setAnalytics] = useState<any>(null);
 
   useEffect(() => {
     fetchData(true); // Show loader on initial load
+    fetchAnalytics(); // Fetch analytics for statistics
   }, [auctionId]);
 
   useEffect(() => {
@@ -109,6 +111,7 @@ export default function AuctionDisplayPage() {
   useEffect(() => {
     const interval = setInterval(() => {
       fetchData(false); // Don't show loader during polling
+      fetchAnalytics(); // Fetch analytics for statistics
     }, 3000); // Poll every 3 seconds
 
     return () => clearInterval(interval);
@@ -287,6 +290,18 @@ export default function AuctionDisplayPage() {
     }
   };
 
+  const fetchAnalytics = async () => {
+    try {
+      const res = await fetch(`/api/auctions/${auctionId}/analytics`);
+      if (res.ok) {
+        const data = await res.json();
+        setAnalytics(data);
+      }
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -316,23 +331,23 @@ export default function AuctionDisplayPage() {
   // Calculate live statistics
   const calculateStatistics = () => {
     const allPlayers = sortedTeams.flatMap(team => team.players || []);
-
-    // Fastest sale (lowest time between auction start and sale)
-    // For now, we'll use the first sold player as fastest (can enhance with timestamps later)
     const soldPlayers = allPlayers.filter(p => p.soldPrice && p.soldPrice > 0);
-    const fastestSale = soldPlayers.length > 0 ? soldPlayers[0] : null;
 
-    // Highest sale
-    const highestSale = soldPlayers.length > 0
-      ? soldPlayers.reduce((max, p) => (p.soldPrice || 0) > (max.soldPrice || 0) ? p : max)
-      : null;
+    // Most popular (from analytics - player with bids from most unique teams)
+    const mostPopular = analytics?.mostPopularPlayer || null;
+
+    // Highest sale (from analytics or calculate locally)
+    const highestSale = analytics?.mostExpensivePlayers?.[0] ||
+      (soldPlayers.length > 0
+        ? soldPlayers.reduce((max, p) => (p.soldPrice || 0) > (max.soldPrice || 0) ? p : max)
+        : null);
 
     // Best bargain (lowest price relative to potential value - for now, just lowest sold price)
     const bestBargain = soldPlayers.length > 0
       ? soldPlayers.reduce((min, p) => (p.soldPrice || Infinity) < (min.soldPrice || Infinity) ? p : min)
       : null;
 
-    return { fastestSale, highestSale, bestBargain, soldPlayers };
+    return { mostPopular, highestSale, bestBargain, soldPlayers };
   };
 
   // Calculate role distribution for each team
@@ -498,15 +513,17 @@ export default function AuctionDisplayPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                    {/* Fastest Sale */}
-                    {statistics.fastestSale && (
-                      <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200">
+                    {/* Most Popular */}
+                    {statistics.mostPopular && (
+                      <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="text-2xl">⚡</span>
-                          <p className="text-xs font-semibold text-yellow-800 uppercase tracking-wide">Fastest Sale</p>
+                          <span className="text-2xl">🔥</span>
+                          <p className="text-xs font-semibold text-purple-800 uppercase tracking-wide">Most Popular</p>
                         </div>
-                        <p className="text-lg font-bold text-yellow-900 truncate">{statistics.fastestSale.name}</p>
-                        <p className="text-sm text-yellow-700">{formatCurrency(statistics.fastestSale.soldPrice || 0)}</p>
+                        <p className="text-lg font-bold text-purple-900 truncate">{statistics.mostPopular.name}</p>
+                        <p className="text-sm text-purple-700">
+                          {statistics.mostPopular.uniqueTeamsCount} {statistics.mostPopular.uniqueTeamsCount === 1 ? 'team' : 'teams'} bid
+                        </p>
                       </div>
                     )}
 
