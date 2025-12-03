@@ -15,6 +15,7 @@ import { canAffordPlayer, formatCurrency as formatCurrencyUtil } from "@/lib/bud
 import confetti from "canvas-confetti";
 import { BidCountdownTimer } from "@/components/BidCountdownTimer";
 import { getDisplayablePlayerStats } from "@/lib/utils/player-utils";
+import { formatNumberWithCommas, parseNumberFromCommas } from "@/lib/utils/currency-utils";
 
 interface Player {
   id: string;
@@ -774,11 +775,14 @@ export default function BiddingPage() {
                           <Minus className="h-4 w-4" />
                         </Button>
                         <Input
-                          type="number"
-                          value={bidAmount}
-                          onChange={(e) => setBidAmount(parseInt(e.target.value))}
+                          type="text"
+                          value={formatNumberWithCommas(bidAmount)}
+                          onChange={(e) => {
+                            const numValue = parseNumberFromCommas(e.target.value);
+                            setBidAmount(numValue);
+                          }}
                           className="text-center text-xl font-bold"
-                          step={bidIncrement}
+                          inputMode="numeric"
                         />
                         <Button
                           onClick={increaseBid}

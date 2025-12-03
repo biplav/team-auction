@@ -16,6 +16,7 @@ import { createSocketClient } from "@/lib/socket-client";
 import confetti from "canvas-confetti";
 import { getDisplayablePlayerStats } from "@/lib/utils/player-utils";
 import { BidCountdownTimer } from "@/components/BidCountdownTimer";
+import { formatNumberWithCommas, parseNumberFromCommas } from "@/lib/utils/currency-utils";
 
 interface Player {
   id: string;
@@ -1058,11 +1059,14 @@ export default function ConductAuctionPage() {
                                   <Minus className="h-4 w-4" />
                                 </Button>
                                 <Input
-                                  type="number"
-                                  value={adminBidAmount}
-                                  onChange={(e) => setAdminBidAmount(parseInt(e.target.value) || 0)}
+                                  type="text"
+                                  value={formatNumberWithCommas(adminBidAmount)}
+                                  onChange={(e) => {
+                                    const numValue = parseNumberFromCommas(e.target.value);
+                                    setAdminBidAmount(numValue || 0);
+                                  }}
                                   className="text-center text-xl font-bold"
-                                  step={bidIncrement}
+                                  inputMode="numeric"
                                 />
                                 <Button
                                   onClick={increaseAdminBid}
