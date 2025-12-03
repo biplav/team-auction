@@ -97,6 +97,7 @@ export default function ConductAuctionPage() {
   const [adminBidTeamId, setAdminBidTeamId] = useState<string>("");
   const [adminBidAmount, setAdminBidAmount] = useState<number>(0);
   const [placingAdminBid, setPlacingAdminBid] = useState(false);
+  const [isPlayerTransitioning, setIsPlayerTransitioning] = useState(false);
 
   const unsoldPlayers = players.filter((p) => p.status === "UNSOLD");
   const soldPlayers = players.filter((p) => p.status === "SOLD");
@@ -185,6 +186,14 @@ export default function ConductAuctionPage() {
       }
     });
 
+    socketInstance.on("current-player-changed", (data) => {
+      console.log("Current player changed via socket:", data);
+      if (data.playerId) {
+        setBids([]); // Clear bids immediately
+        fetchCurrentPlayer(data.playerId);
+      }
+    });
+
     setSocket(socketInstance);
 
     return () => {
@@ -195,13 +204,13 @@ export default function ConductAuctionPage() {
 
   useEffect(() => {
     if (auction?.currentPlayerId) {
-      const player = players.find(p => p.id === auction.currentPlayerId);
-      if (player) {
-        setCurrentPlayer(player);
-        fetchBids(player.id);
-      }
+      fetchCurrentPlayer(auction.currentPlayerId);
+    } else {
+      setCurrentPlayer(null);
+      setBids([]);
+      setIsPlayerTransitioning(false);
     }
-  }, [auction?.currentPlayerId, players]);
+  }, [auction?.currentPlayerId]);
 
   // Poll for bid updates when auction is in progress
   useEffect(() => {
@@ -274,6 +283,33 @@ export default function ConductAuctionPage() {
       }
     } catch (error) {
       console.error("Error fetching bids:", error);
+    }
+  };
+
+  const fetchCurrentPlayer = async (playerId: string) => {
+    if (!playerId) {
+      setCurrentPlayer(null);
+      setBids([]);
+      return;
+    }
+
+    setIsPlayerTransitioning(true);
+    try {
+      const res = await fetch(`/api/players/${playerId}`);
+      if (res.ok) {
+        const playerData = await res.json();
+        setCurrentPlayer(playerData);
+        fetchBids(playerId);
+
+        // Reset admin bid fields
+        setAdminBidTeamId("");
+        const baseAmount = playerData.basePrice + bidIncrement;
+        setAdminBidAmount(baseAmount);
+      }
+    } catch (error) {
+      console.error("Error fetching current player:", error);
+    } finally {
+      setIsPlayerTransitioning(false);
     }
   };
 
@@ -350,7 +386,7 @@ export default function ConductAuctionPage() {
   };
 
   const sellPlayer = async (teamId: string, amount: number) => {
-    if (!currentPlayer) return;
+    if (!currentPlayer || isPlayerTransitioning) return;
 
     // Validate that there are active bids
     if (bids.length === 0) {
@@ -402,7 +438,7 @@ export default function ConductAuctionPage() {
   };
 
   const markUnsold = async () => {
-    if (!currentPlayer) return;
+    if (!currentPlayer || isPlayerTransitioning) return;
 
     // Check if player was sold and needs refund
     if (currentPlayer.status === "SOLD" && currentPlayer.soldPrice) {
@@ -446,7 +482,7 @@ export default function ConductAuctionPage() {
   };
 
   const discardBids = async () => {
-    if (!currentPlayer) return;
+    if (!currentPlayer || isPlayerTransitioning) return;
 
     if (!confirm("Are you sure you want to discard all bids for this player? This action cannot be undone.")) {
       return;
@@ -569,6 +605,9 @@ export default function ConductAuctionPage() {
   const moveToNextPlayer = async () => {
     if (!currentPlayer) return;
 
+    setIsPlayerTransitioning(true);
+    setBids([]); // Clear bids immediately
+
     // First, try to find next unsold player after current one
     const currentIndex = players.findIndex(p => p.id === currentPlayer.id);
     let nextPlayer = players
@@ -591,7 +630,7 @@ export default function ConductAuctionPage() {
         if (res.ok) {
           const data = await res.json();
           setAuction(data);
-          setBids([]);
+          // Don't set player here, let socket event or useEffect handle it
           socket?.emit("next-player", {
             auctionId,
             playerId: nextPlayer.id,
@@ -599,10 +638,12 @@ export default function ConductAuctionPage() {
         }
       } catch (error) {
         console.error("Error moving to next player:", error);
+        setIsPlayerTransitioning(false);
       }
     } else {
       // No more unsold players anywhere, complete auction
       await updateAuctionStatus("COMPLETED");
+      setIsPlayerTransitioning(false);
     }
   };
 
@@ -803,46 +844,53 @@ export default function ConductAuctionPage() {
                     ) : null;
                   })()}
 
-                  <div className="flex flex-col gap-2 mt-6">
-                    {currentPlayer.status === "SOLD" ? (
-                      <div className="flex gap-2">
-                        <Button onClick={markUnsold} variant="outline" className="flex-1">
-                          <XCircle className="mr-2 h-4 w-4" />
-                          Mark Unsold (Refund)
-                        </Button>
-                        <Button onClick={moveToNextPlayer} variant="outline">
-                          <SkipForward className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <>
+                  {!isPlayerTransitioning && (
+                    <div className="flex flex-col gap-2 mt-6">
+                      {currentPlayer.status === "SOLD" ? (
                         <div className="flex gap-2">
-                          {highestBid && (
-                            <Button
-                              onClick={() => sellPlayer(highestBid.team.id, highestBid.amount)}
-                              className="flex-1"
-                            >
-                              <Gavel className="mr-2 h-4 w-4" />
-                              Sell to {highestBid.team.name}
-                            </Button>
-                          )}
                           <Button onClick={markUnsold} variant="outline" className="flex-1">
                             <XCircle className="mr-2 h-4 w-4" />
-                            Mark Unsold
+                            Mark Unsold (Refund)
                           </Button>
                           <Button onClick={moveToNextPlayer} variant="outline">
                             <SkipForward className="h-4 w-4" />
                           </Button>
                         </div>
-                        {bids.length > 0 && (
-                          <Button onClick={discardBids} variant="destructive" size="sm">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Discard All Bids ({bids.length})
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </div>
+                      ) : (
+                        <>
+                          <div className="flex gap-2">
+                            {highestBid && (
+                              <Button
+                                onClick={() => sellPlayer(highestBid.team.id, highestBid.amount)}
+                                className="flex-1"
+                              >
+                                <Gavel className="mr-2 h-4 w-4" />
+                                Sell to {highestBid.team.name}
+                              </Button>
+                            )}
+                            <Button onClick={markUnsold} variant="outline" className="flex-1">
+                              <XCircle className="mr-2 h-4 w-4" />
+                              Mark Unsold
+                            </Button>
+                            <Button onClick={moveToNextPlayer} variant="outline">
+                              <SkipForward className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          {bids.length > 0 && (
+                            <Button onClick={discardBids} variant="destructive" size="sm">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Discard All Bids ({bids.length})
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {isPlayerTransitioning && (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-muted-foreground">Loading next player...</div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p className="text-center text-muted-foreground py-8">
@@ -892,7 +940,7 @@ export default function ConductAuctionPage() {
             </CardContent>
           </Card>
 
-          {auction && auction.status === "IN_PROGRESS" && currentPlayer && currentPlayer.status !== "SOLD" && (
+          {auction && auction.status === "IN_PROGRESS" && currentPlayer && currentPlayer.status !== "SOLD" && !isPlayerTransitioning && (
             <Card>
               <CardContent className="pt-6">
                 <BidCountdownTimer
@@ -907,7 +955,7 @@ export default function ConductAuctionPage() {
             </Card>
           )}
 
-          {auction?.status === "IN_PROGRESS" && currentPlayer && currentPlayer.status !== "SOLD" && (
+          {auction?.status === "IN_PROGRESS" && currentPlayer && currentPlayer.status !== "SOLD" && !isPlayerTransitioning && (
             <Card>
               <CardHeader>
                 <CardTitle>Place Bid on Behalf of Team</CardTitle>
