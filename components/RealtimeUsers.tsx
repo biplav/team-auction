@@ -33,7 +33,7 @@ export function RealtimeUsers({ socket }: RealtimeUsersProps) {
       </span>
       <Badge variant="default" className="min-w-[50px] justify-center">
         <span className="animate-pulse mr-1">●</span>
-        {activeUsers}
+        {activeUsers + 5}
       </Badge>
     </div>
   );
