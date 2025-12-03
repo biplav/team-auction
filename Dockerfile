@@ -15,10 +15,14 @@ RUN npm ci
 FROM base AS builder
 WORKDIR /app
 
-# Accept DATABASE_URL as build argument (needed for Prisma generate)
-# Railway will provide this from environment variables
+# Accept build arguments (Railway will provide these from environment variables)
 ARG DATABASE_URL
+ARG NEXT_PUBLIC_GA_MEASUREMENT_ID
+ARG NEXT_PUBLIC_SOCKET_URL
+
 ENV DATABASE_URL=${DATABASE_URL}
+ENV NEXT_PUBLIC_GA_MEASUREMENT_ID=${NEXT_PUBLIC_GA_MEASUREMENT_ID}
+ENV NEXT_PUBLIC_SOCKET_URL=${NEXT_PUBLIC_SOCKET_URL}
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
