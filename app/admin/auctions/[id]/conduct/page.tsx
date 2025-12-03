@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Play, Pause, SkipForward, Gavel, XCircle, Trash2, Plus, Minus, AlertTriangle, UserPlus } from "lucide-react";
+import { ArrowLeft, Play, Pause, SkipForward, Gavel, XCircle, Trash2, Plus, Minus, AlertTriangle, UserPlus, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Socket } from "socket.io-client";
 import { createSocketClient } from "@/lib/socket-client";
@@ -17,6 +17,7 @@ import confetti from "canvas-confetti";
 import { getDisplayablePlayerStats } from "@/lib/utils/player-utils";
 import { BidCountdownTimer } from "@/components/BidCountdownTimer";
 import { formatNumberWithCommas, parseNumberFromCommas } from "@/lib/utils/currency-utils";
+import { toast, Toaster } from "sonner";
 
 interface Player {
   id: string;
@@ -105,6 +106,7 @@ export default function ConductAuctionPage() {
   const [assigningPlayer, setAssigningPlayer] = useState(false);
   const [showAdminBidDialog, setShowAdminBidDialog] = useState(false);
   const [showAdminBidConfirmation, setShowAdminBidConfirmation] = useState(false);
+  const [selling, setSelling] = useState(false);
 
   const unsoldPlayers = players.filter((p) => p.status === "UNSOLD");
   const soldPlayers = players.filter((p) => p.status === "SOLD");
@@ -317,6 +319,7 @@ export default function ConductAuctionPage() {
       console.error("Error fetching current player:", error);
     } finally {
       setIsPlayerTransitioning(false);
+      setSelling(false); // Reset selling state when player transition completes
     }
   };
 
@@ -393,20 +396,22 @@ export default function ConductAuctionPage() {
   };
 
   const sellPlayer = async (teamId: string, amount: number) => {
-    if (!currentPlayer || isPlayerTransitioning) return;
+    if (!currentPlayer || isPlayerTransitioning || selling) return;
 
     // Validate that there are active bids
     if (bids.length === 0) {
-      alert("Cannot sell player: No active bids found. Please refresh the page and try again.");
+      toast.error("Cannot sell player: No active bids found. Please refresh the page and try again.");
       return;
     }
 
     // Validate that the bid matches
     const highestBid = bids[0];
     if (highestBid.team.id !== teamId || highestBid.amount !== amount) {
-      alert("Cannot sell player: Bid information has changed. Please refresh the page and try again.");
+      toast.error("Cannot sell player: Bid information has changed. Please refresh the page and try again.");
       return;
     }
+
+    setSelling(true);
 
     try {
       const res = await fetch(`/api/players/${currentPlayer.id}/sell`, {
@@ -417,6 +422,10 @@ export default function ConductAuctionPage() {
 
       if (res.ok) {
         const soldTeam = teams.find(t => t.id === teamId);
+
+        // Show success toast
+        toast.success(`${currentPlayer.name} sold to ${soldTeam?.name || "Unknown Team"} for ${formatCurrency(amount)}`);
+
         socket?.emit("player-sold", {
           auctionId,
           player: {
@@ -434,13 +443,16 @@ export default function ConductAuctionPage() {
 
         await fetchData(false); // Don't show loader when selling player
         moveToNextPlayer();
+        // Note: Don't set selling=false here, let player transition handle re-enabling
       } else {
         const errorData = await res.json();
-        alert(`Failed to sell player: ${errorData.error || 'Unknown error'}`);
+        toast.error(`Failed to sell player: ${errorData.error || 'Unknown error'}`);
+        setSelling(false); // Re-enable on error
       }
     } catch (error) {
       console.error("Error selling player:", error);
-      alert("Failed to sell player. Please try again.");
+      toast.error("Failed to sell player. Please try again.");
+      setSelling(false); // Re-enable on error
     }
   };
 
@@ -980,26 +992,55 @@ export default function ConductAuctionPage() {
                                 <Button
                                   onClick={() => sellPlayer(highestBid.team.id, highestBid.amount)}
                                   className="flex-1"
+                                  disabled={selling || isPlayerTransitioning || assigningPlayer}
                                 >
-                                  <Gavel className="mr-2 h-4 w-4" />
-                                  Sell to {highestBid.team.name}
+                                  {selling ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Selling...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Gavel className="mr-2 h-4 w-4" />
+                                      Sell to {highestBid.team.name}
+                                    </>
+                                  )}
                                 </Button>
                               )}
-                              <Button onClick={markUnsold} variant="outline" className="flex-1">
+                              <Button
+                                onClick={markUnsold}
+                                variant="outline"
+                                className="flex-1"
+                                disabled={selling || isPlayerTransitioning || assigningPlayer}
+                              >
                                 <XCircle className="mr-2 h-4 w-4" />
                                 Mark Unsold
                               </Button>
-                              <Button onClick={moveToNextPlayer} variant="outline">
+                              <Button
+                                onClick={moveToNextPlayer}
+                                variant="outline"
+                                disabled={selling || isPlayerTransitioning || assigningPlayer}
+                              >
                                 <SkipForward className="h-4 w-4" />
                               </Button>
                             </div>
-                            <Button onClick={handleAdminBidClick} variant="secondary" className="w-full">
+                            <Button
+                              onClick={handleAdminBidClick}
+                              variant="secondary"
+                              className="w-full"
+                              disabled={selling || isPlayerTransitioning || assigningPlayer}
+                            >
                               <Gavel className="mr-2 h-4 w-4" />
                               Place Bid on Behalf of Team
                             </Button>
                           </div>
                           {bids.length > 0 && (
-                            <Button onClick={discardBids} variant="destructive" size="sm">
+                            <Button
+                              onClick={discardBids}
+                              variant="destructive"
+                              size="sm"
+                              disabled={selling || isPlayerTransitioning || assigningPlayer}
+                            >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Discard All Bids ({bids.length})
                             </Button>
@@ -1556,6 +1597,7 @@ export default function ConductAuctionPage() {
           </div>
         </DialogContent>
       </Dialog>
+      <Toaster position="top-right" richColors />
     </div>
   );
 }
