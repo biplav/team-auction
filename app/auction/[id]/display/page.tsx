@@ -342,12 +342,10 @@ export default function AuctionDisplayPage() {
         ? soldPlayers.reduce((max, p) => (p.soldPrice || 0) > (max.soldPrice || 0) ? p : max)
         : null);
 
-    // Best bargain (lowest price relative to potential value - for now, just lowest sold price)
-    const bestBargain = soldPlayers.length > 0
-      ? soldPlayers.reduce((min, p) => (p.soldPrice || Infinity) < (min.soldPrice || Infinity) ? p : min)
-      : null;
+    // Most wanted (from analytics - player with most total bids)
+    const mostWanted = analytics?.mostWantedPlayer || null;
 
-    return { mostPopular, highestSale, bestBargain, soldPlayers };
+    return { mostPopular, highestSale, mostWanted, soldPlayers };
   };
 
   // Calculate role distribution for each team
@@ -539,15 +537,17 @@ export default function AuctionDisplayPage() {
                       </div>
                     )}
 
-                    {/* Best Bargain */}
-                    {statistics.bestBargain && (
-                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+                    {/* Most Wanted */}
+                    {statistics.mostWanted && (
+                      <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-orange-200">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="text-2xl">🎯</span>
-                          <p className="text-xs font-semibold text-blue-800 uppercase tracking-wide">Best Bargain</p>
+                          <span className="text-2xl">⭐</span>
+                          <p className="text-xs font-semibold text-orange-800 uppercase tracking-wide">Most Wanted</p>
                         </div>
-                        <p className="text-lg font-bold text-blue-900 truncate">{statistics.bestBargain.name}</p>
-                        <p className="text-sm text-blue-700">{formatCurrency(statistics.bestBargain.soldPrice || 0)}</p>
+                        <p className="text-lg font-bold text-orange-900 truncate">{statistics.mostWanted.name}</p>
+                        <p className="text-sm text-orange-700">
+                          {statistics.mostWanted.totalBids} {statistics.mostWanted.totalBids === 1 ? 'bid' : 'bids'}
+                        </p>
                       </div>
                     )}
                   </div>

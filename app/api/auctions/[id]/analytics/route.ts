@@ -210,6 +210,33 @@ export async function GET(
       }
     }
 
+    // Calculate most wanted player (player with most total bids)
+    const playerBidCounts = bids.reduce((acc: Record<string, number>, bid) => {
+      const playerId = bid.player.id;
+      acc[playerId] = (acc[playerId] || 0) + 1;
+      return acc;
+    }, {});
+
+    let mostWantedPlayer = null;
+    let maxBids = 0;
+
+    for (const [playerId, bidCount] of Object.entries(playerBidCounts)) {
+      if (bidCount > maxBids) {
+        maxBids = bidCount;
+        const player = players.find((p: PlayerWithTeam) => p.id === playerId);
+        if (player && player.status === "SOLD") {
+          mostWantedPlayer = {
+            id: player.id,
+            name: player.name,
+            role: player.role,
+            soldPrice: player.soldPrice,
+            totalBids: bidCount,
+            teamName: player.team?.name || "N/A",
+          };
+        }
+      }
+    }
+
     return NextResponse.json({
       auction: {
         id: auction.id,
@@ -230,6 +257,7 @@ export async function GET(
       teamStats,
       mostExpensivePlayers,
       mostPopularPlayer,
+      mostWantedPlayer,
       unsoldPlayers: unsoldPlayersList,
       recentActivity,
     });
