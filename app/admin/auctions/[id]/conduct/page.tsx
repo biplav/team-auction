@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Play, Pause, SkipForward, Gavel, XCircle, Trash2, Plus, Minus, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Play, Pause, SkipForward, Gavel, XCircle, Trash2, Plus, Minus, AlertTriangle, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { Socket } from "socket.io-client";
 import { createSocketClient } from "@/lib/socket-client";
@@ -99,6 +99,10 @@ export default function ConductAuctionPage() {
   const [adminBidAmount, setAdminBidAmount] = useState<number>(0);
   const [placingAdminBid, setPlacingAdminBid] = useState(false);
   const [isPlayerTransitioning, setIsPlayerTransitioning] = useState(false);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [assignTeamId, setAssignTeamId] = useState<string>("");
+  const [showAssignConfirmation, setShowAssignConfirmation] = useState(false);
+  const [assigningPlayer, setAssigningPlayer] = useState(false);
 
   const unsoldPlayers = players.filter((p) => p.status === "UNSOLD");
   const soldPlayers = players.filter((p) => p.status === "SOLD");
@@ -508,6 +512,74 @@ export default function ConductAuctionPage() {
     }
   };
 
+  const handleAssignClick = () => {
+    setAssignTeamId("");
+    setShowAssignDialog(true);
+  };
+
+  const handleAssignConfirm = () => {
+    if (!assignTeamId) {
+      alert("Please select a team");
+      return;
+    }
+    setShowAssignDialog(false);
+    setShowAssignConfirmation(true);
+  };
+
+  const assignPlayerToTeam = async () => {
+    if (!currentPlayer || !assignTeamId || isPlayerTransitioning) return;
+
+    setAssigningPlayer(true);
+    try {
+      const res = await fetch(`/api/players/${currentPlayer.id}/assign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teamId: assignTeamId }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const assignedTeam = teams.find(t => t.id === assignTeamId);
+
+        // Emit socket event to update all connected clients
+        socket?.emit("player-sold", {
+          auctionId,
+          playerId: currentPlayer.id,
+          player: {
+            id: currentPlayer.id,
+            name: currentPlayer.name,
+            role: currentPlayer.role,
+          },
+          team: {
+            id: assignTeamId,
+            name: assignedTeam?.name || "",
+            color: assignedTeam?.color || null,
+          },
+          soldPrice: 0, // Free assignment
+        });
+
+        // Refresh data
+        await fetchData(false);
+
+        // Show success message
+        alert(data.message || `${currentPlayer.name} has been assigned to ${assignedTeam?.name}`);
+
+        // Move to next player
+        await moveToNextPlayer();
+      } else {
+        const error = await res.json();
+        alert(error.error || "Failed to assign player");
+      }
+    } catch (error) {
+      console.error("Error assigning player:", error);
+      alert("Failed to assign player. Please try again.");
+    } finally {
+      setAssigningPlayer(false);
+      setShowAssignConfirmation(false);
+      setAssignTeamId("");
+    }
+  };
+
   const placeAdminBid = async () => {
     if (!adminBidTeamId || !currentPlayer || !adminBidAmount || !auction) {
       alert("Please select a team and enter a bid amount");
@@ -859,22 +931,28 @@ export default function ConductAuctionPage() {
                         </div>
                       ) : (
                         <>
-                          <div className="flex gap-2">
-                            {highestBid && (
-                              <Button
-                                onClick={() => sellPlayer(highestBid.team.id, highestBid.amount)}
-                                className="flex-1"
-                              >
-                                <Gavel className="mr-2 h-4 w-4" />
-                                Sell to {highestBid.team.name}
+                          <div className="flex flex-col gap-2">
+                            <div className="flex gap-2">
+                              {highestBid && (
+                                <Button
+                                  onClick={() => sellPlayer(highestBid.team.id, highestBid.amount)}
+                                  className="flex-1"
+                                >
+                                  <Gavel className="mr-2 h-4 w-4" />
+                                  Sell to {highestBid.team.name}
+                                </Button>
+                              )}
+                              <Button onClick={markUnsold} variant="outline" className="flex-1">
+                                <XCircle className="mr-2 h-4 w-4" />
+                                Mark Unsold
                               </Button>
-                            )}
-                            <Button onClick={markUnsold} variant="outline" className="flex-1">
-                              <XCircle className="mr-2 h-4 w-4" />
-                              Mark Unsold
-                            </Button>
-                            <Button onClick={moveToNextPlayer} variant="outline">
-                              <SkipForward className="h-4 w-4" />
+                              <Button onClick={moveToNextPlayer} variant="outline">
+                                <SkipForward className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <Button onClick={handleAssignClick} variant="secondary" className="w-full">
+                              <UserPlus className="mr-2 h-4 w-4" />
+                              Assign to Team (No Budget Deduction)
                             </Button>
                           </div>
                           {bids.length > 0 && (
@@ -1282,6 +1360,91 @@ export default function ConductAuctionPage() {
           </div>
         </div>
       )}
+
+      {/* Assign Player Dialog */}
+      <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Player to Team</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <p className="text-sm text-muted-foreground">
+              Assign <strong>{currentPlayer?.name}</strong> to a team without any budget deduction.
+              This player will be added as a complimentary player (₹0).
+            </p>
+            <div>
+              <Label>Select Team</Label>
+              <Select value={assignTeamId} onValueChange={setAssignTeamId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a team" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teams.map((team) => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name} ({team._count.players} players)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setShowAssignDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAssignConfirm} disabled={!assignTeamId}>
+                Next
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={showAssignConfirmation} onOpenChange={setShowAssignConfirmation}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Assignment</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-yellow-900">Confirm Free Assignment</p>
+                  <p className="text-sm text-yellow-800 mt-1">
+                    You are about to assign <strong>{currentPlayer?.name}</strong> to{" "}
+                    <strong>{teams.find(t => t.id === assignTeamId)?.name}</strong> as a complimentary player.
+                  </p>
+                  <ul className="text-sm text-yellow-800 mt-2 space-y-1 list-disc list-inside">
+                    <li>No budget will be deducted</li>
+                    <li>Player will be marked as SOLD (₹0)</li>
+                    <li>This action cannot be easily undone</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowAssignConfirmation(false);
+                  setShowAssignDialog(true);
+                }}
+                disabled={assigningPlayer}
+              >
+                Go Back
+              </Button>
+              <Button
+                onClick={assignPlayerToTeam}
+                disabled={assigningPlayer}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {assigningPlayer ? "Assigning..." : "Confirm Assignment"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
