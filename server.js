@@ -31,12 +31,27 @@ app.prepare().then(() => {
     },
   });
 
+  // Track active users per auction
+  const activeUsers = new Map();
+
   io.on("connection", (socket) => {
     console.log("✅ Client connected:", socket.id);
 
     socket.on("join-auction", (auctionId) => {
       socket.join(`auction:${auctionId}`);
       console.log(`✅ Client ${socket.id} joined auction ${auctionId}`);
+
+      // Track active users
+      if (!activeUsers.has(auctionId)) {
+        activeUsers.set(auctionId, new Set());
+      }
+      activeUsers.get(auctionId).add(socket.id);
+
+      // Broadcast updated count
+      io.to(`auction:${auctionId}`).emit("active-users", {
+        count: activeUsers.get(auctionId).size
+      });
+
       io.to(`auction:${auctionId}`).emit("user-joined", {
         userId: socket.id,
         timestamp: new Date(),
@@ -46,6 +61,16 @@ app.prepare().then(() => {
     socket.on("leave-auction", (auctionId) => {
       socket.leave(`auction:${auctionId}`);
       console.log(`Client ${socket.id} left auction ${auctionId}`);
+
+      // Remove from active users
+      if (activeUsers.has(auctionId)) {
+        activeUsers.get(auctionId).delete(socket.id);
+
+        // Broadcast updated count
+        io.to(`auction:${auctionId}`).emit("active-users", {
+          count: activeUsers.get(auctionId).size
+        });
+      }
     });
 
     socket.on("place-bid", async (data) => {
@@ -83,6 +108,16 @@ app.prepare().then(() => {
 
     socket.on("disconnect", () => {
       console.log("❌ Client disconnected:", socket.id);
+
+      // Clean up user from all auctions
+      activeUsers.forEach((users, auctionId) => {
+        if (users.has(socket.id)) {
+          users.delete(socket.id);
+          io.to(`auction:${auctionId}`).emit("active-users", {
+            count: users.size
+          });
+        }
+      });
     });
   });
 

@@ -10,6 +10,7 @@ import { createSocketClient } from "@/lib/socket-client";
 import confetti from "canvas-confetti";
 import { getDisplayablePlayerStats } from "@/lib/utils/player-utils";
 import { BidCountdownTimer } from "@/components/BidCountdownTimer";
+import { RealtimeUsers } from "@/components/RealtimeUsers";
 
 interface Player {
   id: string;
@@ -378,11 +379,16 @@ export default function AuctionDisplayPage() {
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
             {auction?.name}
           </h1>
-          {auction && (
-            <Badge className={`${getStatusColor(auction.status)} text-white text-sm md:text-base lg:text-lg px-4 md:px-6 py-1.5 md:py-2`}>
-              {auction.status.replace("_", " ")}
-            </Badge>
-          )}
+          <div className="flex items-center justify-center gap-4 mb-4">
+            {auction && (
+              <>
+                <Badge className={`${getStatusColor(auction.status)} text-white text-sm md:text-base lg:text-lg px-4 md:px-6 py-1.5 md:py-2`}>
+                  {auction.status.replace("_", " ")}
+                </Badge>
+                <RealtimeUsers socket={socket} />
+              </>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
