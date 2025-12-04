@@ -375,8 +375,8 @@ export default function AuctionDisplayPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 to-purple-900 p-4 md:p-6 lg:p-8">
-      {/* QR Code - Fixed in top right corner */}
-      <div className="fixed top-4 right-4 z-40 bg-white p-3 rounded-lg shadow-2xl border-4 border-white">
+      {/* QR Code - Fixed in top right corner - Hidden on mobile */}
+      <div className="hidden md:block fixed top-4 right-4 z-40 bg-white p-3 rounded-lg shadow-2xl border-4 border-white">
         <QRCodeSVG
           value="https://team-auction-production.up.railway.app/"
           size={120}
