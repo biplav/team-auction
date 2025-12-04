@@ -86,6 +86,12 @@ export default function AuctionDisplayPage() {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [loadingTeamPlayers, setLoadingTeamPlayers] = useState(false);
   const [analytics, setAnalytics] = useState<any>(null);
+  const [currentUrl, setCurrentUrl] = useState<string>("");
+
+  useEffect(() => {
+    // Set the current page URL for QR code
+    setCurrentUrl(window.location.href);
+  }, []);
 
   useEffect(() => {
     fetchData(true); // Show loader on initial load
@@ -376,15 +382,17 @@ export default function AuctionDisplayPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 to-purple-900 p-4 md:p-6 lg:p-8">
       {/* QR Code - Fixed in top right corner - Hidden on mobile */}
-      <div className="hidden md:block fixed top-4 right-4 z-40 bg-white p-3 rounded-lg shadow-2xl border-4 border-white">
-        <QRCodeSVG
-          value="https://team-auction-production.up.railway.app/"
-          size={120}
-          level="H"
-          includeMargin={false}
-        />
-        <p className="text-xs text-center text-gray-700 font-semibold mt-2">Scan to Join</p>
-      </div>
+      {currentUrl && (
+        <div className="hidden md:block fixed top-4 right-4 z-40 bg-white p-3 rounded-lg shadow-2xl border-4 border-white">
+          <QRCodeSVG
+            value={currentUrl}
+            size={120}
+            level="H"
+            includeMargin={false}
+          />
+          <p className="text-xs text-center text-gray-700 font-semibold mt-2">Scan to Join</p>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-6 md:mb-8">
