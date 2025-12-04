@@ -11,6 +11,7 @@ import confetti from "canvas-confetti";
 import { getDisplayablePlayerStats } from "@/lib/utils/player-utils";
 import { BidCountdownTimer } from "@/components/BidCountdownTimer";
 import { RealtimeUsers } from "@/components/RealtimeUsers";
+import { QRCodeSVG } from "qrcode.react";
 
 interface Player {
   id: string;
@@ -374,6 +375,17 @@ export default function AuctionDisplayPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 to-purple-900 p-4 md:p-6 lg:p-8">
+      {/* QR Code - Fixed in top right corner */}
+      <div className="fixed top-4 right-4 z-40 bg-white p-3 rounded-lg shadow-2xl border-4 border-white">
+        <QRCodeSVG
+          value="https://team-auction-production.up.railway.app/"
+          size={120}
+          level="H"
+          includeMargin={false}
+        />
+        <p className="text-xs text-center text-gray-700 font-semibold mt-2">Scan to Join</p>
+      </div>
+
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-6 md:mb-8">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
