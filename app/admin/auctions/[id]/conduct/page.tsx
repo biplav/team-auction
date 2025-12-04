@@ -121,8 +121,11 @@ export default function ConductAuctionPage() {
   // Initialize admin bid amount when player or bids change
   useEffect(() => {
     if (currentPlayer && auction?.status === "IN_PROGRESS") {
-      const highestBidAmount = bids.length > 0 ? bids[0].amount : currentPlayer.basePrice;
-      setAdminBidAmount(highestBidAmount + bidIncrement);
+      // Changed: Only add increment if bids exist
+      const defaultBidAmount = bids.length > 0
+        ? bids[0].amount + bidIncrement
+        : currentPlayer.basePrice;
+      setAdminBidAmount(defaultBidAmount);
     }
   }, [currentPlayer, bids, auction?.status]);
 
@@ -324,7 +327,8 @@ export default function ConductAuctionPage() {
 
         // Reset admin bid fields
         setAdminBidTeamId("");
-        const baseAmount = playerData.basePrice + bidIncrement;
+        // Changed: Don't add increment for initial amount
+        const baseAmount = playerData.basePrice;
         setAdminBidAmount(baseAmount);
       }
     } catch (error) {
@@ -624,7 +628,10 @@ export default function ConductAuctionPage() {
   const handleAdminBidClick = () => {
     // Reset and initialize admin bid dialog
     setAdminBidTeamId("");
-    const baseAmount = currentPlayer ? currentPlayer.basePrice + bidIncrement : bidIncrement;
+    // Changed: Use basePrice if no bids, otherwise highest + increment
+    const baseAmount = currentPlayer && bids.length > 0
+      ? bids[0].amount + bidIncrement
+      : currentPlayer?.basePrice || 0;
     setAdminBidAmount(baseAmount);
     setShowAdminBidDialog(true);
   };

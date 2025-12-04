@@ -347,9 +347,12 @@ export default function BiddingPage() {
     console.log('[DEBUG] useEffect[currentPlayer]: currentPlayer changed', currentPlayer?.id);
     if (currentPlayer) {
       fetchBids(currentPlayer.id);
-      const highestBidAmount = bids.length > 0 ? bids[0].amount : currentPlayer.basePrice;
-      console.log('[DEBUG] useEffect[currentPlayer]: Setting bid amount to', highestBidAmount + bidIncrement);
-      setBidAmount(highestBidAmount + bidIncrement);
+      // Changed: Only add increment if bids exist
+      const defaultBidAmount = bids.length > 0
+        ? bids[0].amount + bidIncrement
+        : currentPlayer.basePrice;
+      console.log('[DEBUG] useEffect[currentPlayer]: Setting bid amount to', defaultBidAmount);
+      setBidAmount(defaultBidAmount);
 
       // Fetch max bid info when player changes
       if (myTeam?.id) {
@@ -367,10 +370,13 @@ export default function BiddingPage() {
 
   useEffect(() => {
     console.log('[DEBUG] useEffect[bids]: bids changed, count:', bids.length);
-    if (bids.length > 0 && currentPlayer) {
-      const highestBidAmount = bids[0].amount;
-      console.log('[DEBUG] useEffect[bids]: Updating bid amount to', highestBidAmount + bidIncrement);
-      setBidAmount(highestBidAmount + bidIncrement);
+    if (currentPlayer) {
+      // Changed: Set to basePrice if no bids, otherwise highest + increment
+      const defaultBidAmount = bids.length > 0
+        ? bids[0].amount + bidIncrement
+        : currentPlayer.basePrice;
+      console.log('[DEBUG] useEffect[bids]: Updating bid amount to', defaultBidAmount);
+      setBidAmount(defaultBidAmount);
     }
   }, [bids]);
 
