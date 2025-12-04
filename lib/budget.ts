@@ -85,7 +85,7 @@ export async function calculateDynamicMaxBid(
   // Handle case where there are fewer unsold players than required
   const actualReservedPlayers = cheapestPlayers.length;
   const reservedAmount = cheapestPlayers.reduce(
-    (sum, player) => sum + player.basePrice,
+    (sum: number, player: { basePrice: number }) => sum + player.basePrice,
     0
   );
 
