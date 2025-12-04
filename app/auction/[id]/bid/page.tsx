@@ -86,6 +86,11 @@ export default function BiddingPage() {
   const [soldPlayer, setSoldPlayer] = useState<SoldPlayerData | null>(null);
   const [showSoldAnimation, setShowSoldAnimation] = useState(false);
   const [renderKey, setRenderKey] = useState(0); // Force re-render counter
+  const [maxBidInfo, setMaxBidInfo] = useState<{
+    maxAllowableBid: number;
+    reservedAmount: number;
+    reservedPlayerCount: number;
+  } | null>(null);
 
   // Refs to maintain current values for socket handlers (avoiding stale closures)
   const currentPlayerRef = useRef<Player | null>(null);
@@ -345,8 +350,20 @@ export default function BiddingPage() {
       const highestBidAmount = bids.length > 0 ? bids[0].amount : currentPlayer.basePrice;
       console.log('[DEBUG] useEffect[currentPlayer]: Setting bid amount to', highestBidAmount + bidIncrement);
       setBidAmount(highestBidAmount + bidIncrement);
+
+      // Fetch max bid info when player changes
+      if (myTeam?.id) {
+        fetchMaxBidInfo(myTeam.id, currentPlayer.id);
+      }
     }
   }, [currentPlayer]);
+
+  useEffect(() => {
+    // Fetch max bid info when myTeam changes
+    if (myTeam?.id && currentPlayer?.id) {
+      fetchMaxBidInfo(myTeam.id, currentPlayer.id);
+    }
+  }, [myTeam?.id]);
 
   useEffect(() => {
     console.log('[DEBUG] useEffect[bids]: bids changed, count:', bids.length);
@@ -450,6 +467,21 @@ export default function BiddingPage() {
     }
   };
 
+  const fetchMaxBidInfo = async (teamId: string, playerId?: string) => {
+    try {
+      const url = playerId
+        ? `/api/teams/${teamId}/max-bid?playerId=${playerId}`
+        : `/api/teams/${teamId}/max-bid`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        setMaxBidInfo(data);
+      }
+    } catch (error) {
+      console.error("Error fetching max bid info:", error);
+    }
+  };
+
   const placeBid = async () => {
     if (!myTeam || !currentPlayer || !bidAmount || !auction) {
       alert("Missing required data. Please refresh the page.");
@@ -461,17 +493,13 @@ export default function BiddingPage() {
       return;
     }
 
-    const currentPlayerCount = myTeam.players?.length || 0;
-    const remainingRequiredPlayers = typeof auction.minPlayersPerTeam === 'number'
-      ? Math.max(0, auction.minPlayersPerTeam - currentPlayerCount - 1)
-      : 0;
-    const maxAllowableBid = typeof auction.minPlayerPrice === 'number'
-      ? myTeam.remainingBudget - (remainingRequiredPlayers * auction.minPlayerPrice)
-      : myTeam.remainingBudget;
+    // Use fetched max bid info if available, otherwise fallback to inline calculation
+    const maxAllowableBid = maxBidInfo?.maxAllowableBid ?? myTeam.remainingBudget;
+    const reservedAmount = maxBidInfo?.reservedAmount ?? 0;
+    const reservedPlayerCount = maxBidInfo?.reservedPlayerCount ?? 0;
 
     if (bidAmount > maxAllowableBid) {
-      const reserved = remainingRequiredPlayers * (auction.minPlayerPrice || 0);
-      alert(`Maximum allowable bid is ${formatCurrency(maxAllowableBid)}. You need to reserve ${formatCurrency(reserved)} for ${remainingRequiredPlayers} more player(s) to meet minimum squad size.`);
+      alert(`Maximum allowable bid is ${formatCurrencyUtil(maxAllowableBid)}. You need to reserve ${formatCurrencyUtil(reservedAmount)} for ${reservedPlayerCount} more player(s) to meet minimum squad size.`);
       return;
     }
 

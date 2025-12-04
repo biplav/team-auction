@@ -32,6 +32,73 @@ export function calculateMaxAllowableBid(
 }
 
 /**
+ * Calculate the maximum allowable bid using dynamic calculation based on actual base prices
+ * This ensures the team maintains enough budget to afford the cheapest remaining unsold players
+ *
+ * @param remainingBudget - Team's current remaining budget
+ * @param currentPlayerCount - Number of players already in the team
+ * @param minPlayersPerTeam - Minimum players required per team (from auction rules)
+ * @param auctionId - ID of the auction to query unsold players
+ * @param currentPlayerId - ID of the current player being bid on (to exclude from calculation)
+ * @param prisma - Prisma client instance
+ * @returns Object with maxAllowableBid, reservedAmount, and reservedPlayerCount
+ */
+export async function calculateDynamicMaxBid(
+  remainingBudget: number,
+  currentPlayerCount: number,
+  minPlayersPerTeam: number,
+  auctionId: string,
+  currentPlayerId: string | undefined,
+  prisma: any
+): Promise<{
+  maxAllowableBid: number;
+  reservedAmount: number;
+  reservedPlayerCount: number;
+}> {
+  // Calculate how many more players are needed to reach minimum squad size
+  // Subtract 1 because we're considering the current player being bid on
+  const remainingRequiredPlayers = Math.max(
+    0,
+    minPlayersPerTeam - currentPlayerCount - 1
+  );
+
+  if (remainingRequiredPlayers === 0) {
+    return {
+      maxAllowableBid: remainingBudget,
+      reservedAmount: 0,
+      reservedPlayerCount: 0,
+    };
+  }
+
+  // Get the N cheapest unsold players (excluding current player being bid on)
+  const cheapestPlayers = await prisma.player.findMany({
+    where: {
+      auctionId,
+      status: 'UNSOLD',
+      id: currentPlayerId ? { not: currentPlayerId } : undefined,
+    },
+    orderBy: { basePrice: 'asc' },
+    take: remainingRequiredPlayers,
+    select: { basePrice: true },
+  });
+
+  // Handle case where there are fewer unsold players than required
+  const actualReservedPlayers = cheapestPlayers.length;
+  const reservedAmount = cheapestPlayers.reduce(
+    (sum, player) => sum + player.basePrice,
+    0
+  );
+
+  const maxAllowableBid = Math.max(0, remainingBudget - reservedAmount);
+
+  return {
+    maxAllowableBid,
+    reservedAmount,
+    reservedPlayerCount: actualReservedPlayers,
+  };
+}
+
+/**
  * Calculate remaining required players for a team
  *
  * @param currentPlayerCount - Number of players already in the team

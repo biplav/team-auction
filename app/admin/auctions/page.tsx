@@ -24,6 +24,7 @@ interface Auction {
   minBidIncrement: number;
   bidTimerSeconds: number;
   timerEnabled: boolean;
+  useDynamicBidCalculation: boolean;
   createdAt: string;
   _count: {
     teams: number;
@@ -59,6 +60,7 @@ export default function AuctionsPage() {
     minBidIncrement: 50000,
     bidTimerSeconds: 90,
     timerEnabled: true,
+    useDynamicBidCalculation: false,
   });
   const [editFormData, setEditFormData] = useState({
     name: "",
@@ -71,6 +73,7 @@ export default function AuctionsPage() {
     minBidIncrement: 50000,
     bidTimerSeconds: 90,
     timerEnabled: true,
+    useDynamicBidCalculation: false,
   });
 
   useEffect(() => {
@@ -117,6 +120,7 @@ export default function AuctionsPage() {
           minBidIncrement: formData.minBidIncrement,
           bidTimerSeconds: formData.bidTimerSeconds,
           timerEnabled: formData.timerEnabled,
+          useDynamicBidCalculation: formData.useDynamicBidCalculation,
         }),
       });
 
@@ -133,6 +137,7 @@ export default function AuctionsPage() {
           minBidIncrement: 50000,
           bidTimerSeconds: 90,
           timerEnabled: true,
+          useDynamicBidCalculation: false,
         });
         fetchAuctions();
       } else {
@@ -161,6 +166,7 @@ export default function AuctionsPage() {
       minBidIncrement: auction.minBidIncrement,
       bidTimerSeconds: auction.bidTimerSeconds,
       timerEnabled: auction.timerEnabled,
+      useDynamicBidCalculation: auction.useDynamicBidCalculation,
     });
     setEditOpen(true);
   };
@@ -194,6 +200,7 @@ export default function AuctionsPage() {
           minBidIncrement: editFormData.minBidIncrement,
           bidTimerSeconds: editFormData.bidTimerSeconds,
           timerEnabled: editFormData.timerEnabled,
+          useDynamicBidCalculation: editFormData.useDynamicBidCalculation,
         }),
       });
 
@@ -393,6 +400,23 @@ export default function AuctionsPage() {
                   </p>
                 </div>
               )}
+
+              <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="useDynamicBidCalculation"
+                  checked={formData.useDynamicBidCalculation}
+                  onChange={(e) => setFormData({ ...formData, useDynamicBidCalculation: e.target.checked })}
+                  className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                />
+                <div className="flex-1">
+                  <Label htmlFor="useDynamicBidCalculation" className="cursor-pointer font-semibold">Use Dynamic Bid Calculation</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Calculate max bid based on actual base prices of remaining unsold players (recommended for accurate budget management)
+                  </p>
+                </div>
+              </div>
+
               <div className="flex gap-2 justify-end">
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                   Cancel
@@ -559,6 +583,23 @@ export default function AuctionsPage() {
                   </p>
                 </div>
               )}
+
+              <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="edit-useDynamicBidCalculation"
+                  checked={editFormData.useDynamicBidCalculation}
+                  onChange={(e) => setEditFormData({ ...editFormData, useDynamicBidCalculation: e.target.checked })}
+                  className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                />
+                <div className="flex-1">
+                  <Label htmlFor="edit-useDynamicBidCalculation" className="cursor-pointer font-semibold">Use Dynamic Bid Calculation</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Calculate max bid based on actual base prices of remaining unsold players (recommended for accurate budget management)
+                  </p>
+                </div>
+              </div>
+
               <div className="flex gap-2 justify-end">
                 <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>
                   Cancel

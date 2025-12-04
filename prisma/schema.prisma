@@ -121,6 +121,8 @@ model Player {
 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+
+  @@index([auctionId, status, basePrice])
 }
 
 model Auction {
@@ -140,6 +142,7 @@ model Auction {
   minBidIncrement   Int           @default(50000)
   bidTimerSeconds   Int           @default(90)
   timerEnabled      Boolean       @default(true)
+  useDynamicBidCalculation Boolean  @default(false)
 
   teams          Team[]
   players        Player[]       @relation("AuctionPlayers")

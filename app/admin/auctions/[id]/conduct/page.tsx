@@ -107,6 +107,11 @@ export default function ConductAuctionPage() {
   const [showAdminBidDialog, setShowAdminBidDialog] = useState(false);
   const [showAdminBidConfirmation, setShowAdminBidConfirmation] = useState(false);
   const [selling, setSelling] = useState(false);
+  const [adminMaxBidInfo, setAdminMaxBidInfo] = useState<{
+    maxAllowableBid: number;
+    reservedAmount: number;
+    reservedPlayerCount: number;
+  } | null>(null);
 
   const unsoldPlayers = players.filter((p) => p.status === "UNSOLD");
   const soldPlayers = players.filter((p) => p.status === "SOLD");
@@ -120,6 +125,13 @@ export default function ConductAuctionPage() {
       setAdminBidAmount(highestBidAmount + bidIncrement);
     }
   }, [currentPlayer, bids, auction?.status]);
+
+  // Fetch max bid info when admin bid team changes
+  useEffect(() => {
+    if (adminBidTeamId && currentPlayer?.id) {
+      fetchAdminMaxBidInfo(adminBidTeamId, currentPlayer.id);
+    }
+  }, [adminBidTeamId, currentPlayer?.id]);
 
   useEffect(() => {
     fetchData(true); // Show loader on initial load
@@ -345,6 +357,21 @@ export default function ConductAuctionPage() {
       console.error("Error fetching team players:", error);
     } finally {
       setLoadingTeamPlayers(false);
+    }
+  };
+
+  const fetchAdminMaxBidInfo = async (teamId: string, playerId?: string) => {
+    try {
+      const url = playerId
+        ? `/api/teams/${teamId}/max-bid?playerId=${playerId}`
+        : `/api/teams/${teamId}/max-bid`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        setAdminMaxBidInfo(data);
+      }
+    } catch (error) {
+      console.error("Error fetching admin max bid info:", error);
     }
   };
 
@@ -618,16 +645,18 @@ export default function ConductAuctionPage() {
       return;
     }
 
-    const remainingRequiredPlayers = Math.max(0, auction.minPlayersPerTeam - currentPlayerCount - 1);
-    const maxAllowableBid = selectedTeam.remainingBudget - (remainingRequiredPlayers * auction.minPlayerPrice);
+    // Use fetched max bid info if available, otherwise fallback to inline calculation
+    const maxAllowableBid = adminMaxBidInfo?.maxAllowableBid ?? selectedTeam.remainingBudget;
+    const reservedAmount = adminMaxBidInfo?.reservedAmount ?? 0;
+    const reservedPlayerCount = adminMaxBidInfo?.reservedPlayerCount ?? 0;
 
     if (maxAllowableBid <= 0) {
-      alert(`${selectedTeam.name} cannot afford this player. They need to reserve budget for ${remainingRequiredPlayers} more player(s).`);
+      alert(`${selectedTeam.name} cannot afford this player. They need to reserve ${formatCurrency(reservedAmount)} for ${reservedPlayerCount} more player(s).`);
       return;
     }
 
     if (adminBidAmount > maxAllowableBid) {
-      alert(`Bid amount exceeds maximum allowable bid of ${formatCurrency(maxAllowableBid)}`);
+      alert(`Bid amount exceeds maximum allowable bid of ${formatCurrency(maxAllowableBid)}. Reserved ${formatCurrency(reservedAmount)} for ${reservedPlayerCount} player(s).`);
       return;
     }
 

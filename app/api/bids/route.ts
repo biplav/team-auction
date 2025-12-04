@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { calculateDynamicMaxBid, formatCurrency } from "@/lib/budget";
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,9 +28,11 @@ export async function POST(request: NextRequest) {
       include: {
         auction: {
           select: {
+            id: true,
             minPlayersPerTeam: true,
             maxPlayersPerTeam: true,
             minPlayerPrice: true,
+            useDynamicBidCalculation: true,
           },
         },
         _count: {
@@ -64,17 +67,39 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if bid would leave enough budget for minimum squad requirements
-    const remainingRequiredPlayers = Math.max(
-      0,
-      team.auction.minPlayersPerTeam - currentPlayerCount - 1
-    );
-    const maxAllowableBid =
-      team.remainingBudget - remainingRequiredPlayers * team.auction.minPlayerPrice;
+    let maxAllowableBid: number;
+    let reservedAmount: number;
+    let reservedPlayerCount: number;
+
+    if (team.auction.useDynamicBidCalculation) {
+      // Use dynamic calculation based on actual base prices of remaining unsold players
+      const result = await calculateDynamicMaxBid(
+        team.remainingBudget,
+        currentPlayerCount,
+        team.auction.minPlayersPerTeam,
+        team.auction.id,
+        playerId,
+        prisma
+      );
+      maxAllowableBid = result.maxAllowableBid;
+      reservedAmount = result.reservedAmount;
+      reservedPlayerCount = result.reservedPlayerCount;
+    } else {
+      // Use existing calculation for backward compatibility
+      const remainingRequiredPlayers = Math.max(
+        0,
+        team.auction.minPlayersPerTeam - currentPlayerCount - 1
+      );
+      maxAllowableBid =
+        team.remainingBudget - remainingRequiredPlayers * team.auction.minPlayerPrice;
+      reservedAmount = remainingRequiredPlayers * team.auction.minPlayerPrice;
+      reservedPlayerCount = remainingRequiredPlayers;
+    }
 
     if (amount > maxAllowableBid) {
       return NextResponse.json(
         {
-          error: `Bid exceeds maximum allowable amount. You need to reserve enough budget for ${remainingRequiredPlayers} more player(s) at minimum ${team.auction.minPlayerPrice} each. Maximum bid: ${maxAllowableBid}`,
+          error: `Bid exceeds maximum allowable amount. Reserved ${formatCurrency(reservedAmount)} for ${reservedPlayerCount} player(s). Maximum bid: ${formatCurrency(maxAllowableBid)}`,
         },
         { status: 400 }
       );
@@ -109,12 +134,6 @@ export async function POST(request: NextRequest) {
       : player.basePrice;
 
     if (amount < minRequired) {
-      const formatCurrency = (amt: number) => {
-        if (amt >= 10000000) return `₹${(amt / 10000000).toFixed(2)}Cr`;
-        if (amt >= 100000) return `₹${(amt / 100000).toFixed(2)}L`;
-        return `₹${amt.toLocaleString()}`;
-      };
-
       return NextResponse.json(
         {
           error: highestBid
