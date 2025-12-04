@@ -68,7 +68,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { status, currentPlayerId, name, sport, maxTeams, maxPlayersPerTeam, minPlayersPerTeam, minPlayerPrice, minBidIncrement, bidTimerSeconds, timerEnabled } = body;
+    const { status, currentPlayerId, name, sport, maxTeams, maxPlayersPerTeam, minPlayersPerTeam, minPlayerPrice, minBidIncrement, bidTimerSeconds, timerEnabled, useDynamicBidCalculation } = body;
 
     const updateData: any = {};
 
@@ -99,6 +99,9 @@ export async function PATCH(
     }
     if (timerEnabled !== undefined) {
       updateData.timerEnabled = timerEnabled;
+    }
+    if (useDynamicBidCalculation !== undefined) {
+      updateData.useDynamicBidCalculation = useDynamicBidCalculation;
     }
 
     // Update status and current player

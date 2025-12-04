@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, sport, maxTeams, maxPlayersPerTeam, minPlayersPerTeam, minPlayerPrice, minBidIncrement, bidTimerSeconds, timerEnabled } = body;
+    const { name, sport, maxTeams, maxPlayersPerTeam, minPlayersPerTeam, minPlayerPrice, minBidIncrement, bidTimerSeconds, timerEnabled, useDynamicBidCalculation } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
         minBidIncrement: minBidIncrement || 50000,
         bidTimerSeconds: bidTimerSeconds || 90,
         timerEnabled: timerEnabled !== undefined ? timerEnabled : true,
+        useDynamicBidCalculation: useDynamicBidCalculation !== undefined ? useDynamicBidCalculation : false,
         status: "NOT_STARTED",
       },
     });
