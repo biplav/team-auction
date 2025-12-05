@@ -1,0 +1,289 @@
+/* PDF Stylesheet for Team Owner Manuals */
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Headings */
+h1 {
+  color: #1a365d;
+  font-size: 2.5em;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  padding-bottom: 0.3em;
+  border-bottom: 3px solid #3182ce;
+  page-break-after: avoid;
+}
+
+h2 {
+  color: #2c5282;
+  font-size: 2em;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  padding-bottom: 0.2em;
+  border-bottom: 2px solid #4299e1;
+  page-break-after: avoid;
+}
+
+h3 {
+  color: #2d3748;
+  font-size: 1.5em;
+  margin-top: 1.2em;
+  margin-bottom: 0.4em;
+  page-break-after: avoid;
+}
+
+h4 {
+  color: #4a5568;
+  font-size: 1.2em;
+  margin-top: 1em;
+  margin-bottom: 0.3em;
+  page-break-after: avoid;
+}
+
+/* Paragraphs */
+p {
+  margin-bottom: 1em;
+  text-align: justify;
+}
+
+/* Lists */
+ul, ol {
+  margin-bottom: 1em;
+  padding-left: 2em;
+}
+
+li {
+  margin-bottom: 0.5em;
+}
+
+/* Code blocks */
+code {
+  background-color: #f7fafc;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9em;
+  color: #c7254e;
+}
+
+pre {
+  background-color: #2d3748;
+  color: #e2e8f0;
+  padding: 1em;
+  border-radius: 5px;
+  overflow-x: auto;
+  page-break-inside: avoid;
+}
+
+pre code {
+  background-color: transparent;
+  color: #e2e8f0;
+  padding: 0;
+}
+
+/* Blockquotes */
+blockquote {
+  border-left: 4px solid #4299e1;
+  background-color: #ebf8ff;
+  padding: 0.5em 1em;
+  margin: 1em 0;
+  font-style: italic;
+  page-break-inside: avoid;
+}
+
+/* Tables */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+  page-break-inside: avoid;
+}
+
+th {
+  background-color: #2d3748;
+  color: white;
+  padding: 0.75em;
+  text-align: left;
+  font-weight: bold;
+}
+
+td {
+  border: 1px solid #e2e8f0;
+  padding: 0.75em;
+}
+
+tr:nth-child(even) {
+  background-color: #f7fafc;
+}
+
+/* Horizontal rules */
+hr {
+  border: none;
+  border-top: 2px solid #cbd5e0;
+  margin: 2em 0;
+}
+
+/* Links */
+a {
+  color: #3182ce;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Strong and emphasis */
+strong {
+  color: #1a202c;
+  font-weight: bold;
+}
+
+em {
+  font-style: italic;
+}
+
+/* Page breaks */
+.page-break {
+  page-break-after: always;
+}
+
+/* Special boxes for warnings, tips, etc. */
+.warning {
+  background-color: #fff5f5;
+  border-left: 4px solid #fc8181;
+  padding: 1em;
+  margin: 1em 0;
+  page-break-inside: avoid;
+}
+
+.tip {
+  background-color: #f0fff4;
+  border-left: 4px solid #68d391;
+  padding: 1em;
+  margin: 1em 0;
+  page-break-inside: avoid;
+}
+
+.info {
+  background-color: #ebf8ff;
+  border-left: 4px solid #4299e1;
+  padding: 1em;
+  margin: 1em 0;
+  page-break-inside: avoid;
+}
+
+/* Quick Start specific styles */
+.quickstart h1 {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.5em;
+  margin: 0 0 1em 0;
+  border-bottom: none;
+}
+
+.quickstart h2 {
+  background-color: #4299e1;
+  color: white;
+  padding: 0.5em;
+  margin-top: 2em;
+  border-bottom: none;
+  border-radius: 5px;
+}
+
+/* Manual specific styles */
+.manual h1 {
+  text-align: left;
+}
+
+/* Screenshots */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1em auto;
+  border: 1px solid #cbd5e0;
+  border-radius: 5px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  page-break-inside: avoid;
+}
+
+/* Figure captions */
+figcaption {
+  text-align: center;
+  font-style: italic;
+  color: #718096;
+  margin-top: 0.5em;
+  margin-bottom: 1em;
+}
+
+/* Status badges in text */
+.badge {
+  display: inline-block;
+  padding: 0.25em 0.5em;
+  border-radius: 3px;
+  font-size: 0.85em;
+  font-weight: bold;
+}
+
+.badge-green {
+  background-color: #68d391;
+  color: #22543d;
+}
+
+.badge-yellow {
+  background-color: #f6e05e;
+  color: #744210;
+}
+
+.badge-red {
+  background-color: #fc8181;
+  color: #742a2a;
+}
+
+.badge-blue {
+  background-color: #63b3ed;
+  color: #1a365d;
+}
+
+/* Table of contents */
+#table-of-contents + ul {
+  background-color: #f7fafc;
+  padding: 1.5em;
+  border-radius: 5px;
+  border: 1px solid #cbd5e0;
+}
+
+#table-of-contents + ul li {
+  margin-bottom: 0.3em;
+}
+
+/* Print optimization */
+@media print {
+  body {
+    font-size: 11pt;
+  }
+
+  h1 {
+    font-size: 20pt;
+  }
+
+  h2 {
+    font-size: 16pt;
+  }
+
+  h3 {
+    font-size: 14pt;
+  }
+
+  a {
+    color: #3182ce;
+    text-decoration: underline;
+  }
+}
