@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
 import type { ComprehensiveReportData } from "./report-data";
+import { formatRoleLabel } from "@/lib/roles";
 
 /**
  * Format currency for display
@@ -40,7 +41,7 @@ export function generateComprehensiveReportExcel(data: ComprehensiveReportData):
       [],
       ["MOST EXPENSIVE PLAYER"],
       ["Name", data.statistics.mostExpensivePlayer.name],
-      ["Role", data.statistics.mostExpensivePlayer.role.replace("_", " ")],
+      ["Role", formatRoleLabel(data.statistics.mostExpensivePlayer.role)],
       ["Price", formatCurrency(data.statistics.mostExpensivePlayer.price)],
       ["Team", data.statistics.mostExpensivePlayer.team]
     );
@@ -57,7 +58,7 @@ export function generateComprehensiveReportExcel(data: ComprehensiveReportData):
       summaryData.push([
         idx + 1,
         p.name,
-        p.role.replace("_", " "),
+        formatRoleLabel(p.role),
         p.team.name,
         formatCurrency(p.basePrice),
         formatCurrency(p.soldPrice),
@@ -70,7 +71,7 @@ export function generateComprehensiveReportExcel(data: ComprehensiveReportData):
   XLSX.utils.book_append_sheet(wb, ws1, "Summary");
 
   // Sheet 2: Team-wise Players
-  const teamData: any[] = [["TEAM-WISE PLAYER BREAKDOWN"], []];
+  const teamData: (string | number)[][] = [["TEAM-WISE PLAYER BREAKDOWN"], []];
 
   data.teamsWithPlayers.forEach((team) => {
     teamData.push(
@@ -82,16 +83,13 @@ export function generateComprehensiveReportExcel(data: ComprehensiveReportData):
       ["Player Name", "Role", "Base Price", "Sold Price"],
       ...team.players.map((p) => [
         p.name,
-        p.role.replace("_", " "),
+        formatRoleLabel(p.role),
         formatCurrency(p.basePrice),
         formatCurrency(p.soldPrice),
       ]),
       [],
       ["ROLE DISTRIBUTION"],
-      ["Batsmen", team.roleDistribution.BATSMAN],
-      ["Bowlers", team.roleDistribution.BOWLER],
-      ["All-Rounders", team.roleDistribution.ALL_ROUNDER],
-      ["Wicket-Keepers", team.roleDistribution.WICKET_KEEPER],
+      ...Object.entries(team.roleDistribution).map(([role, count]) => [formatRoleLabel(role), count]),
       [],
       []
     );
@@ -105,7 +103,7 @@ export function generateComprehensiveReportExcel(data: ComprehensiveReportData):
   const soldHeaders = [["ALL SOLD PLAYERS"], [], ["Player", "Role", "Base Price", "Sold Price", "Team", "Bid Count"]];
   const soldRows = data.soldPlayers.map((p) => [
     p.name,
-    p.role.replace("_", " "),
+    formatRoleLabel(p.role),
     formatCurrency(p.basePrice),
     formatCurrency(p.soldPrice),
     p.team.name,
@@ -121,7 +119,7 @@ export function generateComprehensiveReportExcel(data: ComprehensiveReportData):
     const unsoldHeaders = [["UNSOLD PLAYERS"], [], ["Player", "Role", "Base Price"]];
     const unsoldRows = data.unsoldPlayers.map((p) => [
       p.name,
-      p.role.replace("_", " "),
+      formatRoleLabel(p.role),
       formatCurrency(p.basePrice),
     ]);
 
@@ -157,7 +155,7 @@ export function generateComprehensiveReportExcel(data: ComprehensiveReportData):
     );
     data.roleSpending.forEach((rs) => {
       budgetData.push([
-        rs.role.replace("_", " "),
+        formatRoleLabel(rs.role),
         formatCurrency(rs.totalSpent),
         rs.playerCount,
         formatCurrency(rs.avgCost),
@@ -206,7 +204,7 @@ export function generateComprehensiveReportExcel(data: ComprehensiveReportData):
     ["Role", "Total Players", "Sold", "Avg Price"],
   ];
   const roleStatsRows = data.roleStats.map((rs) => [
-    rs.role.replace("_", " "),
+    formatRoleLabel(rs.role),
     rs.total,
     rs.sold,
     formatCurrency(rs.avgPrice),

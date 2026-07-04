@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { AdminNav } from "@/components/admin-nav";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -25,6 +25,8 @@ interface Auction {
   bidTimerSeconds: number;
   timerEnabled: boolean;
   useDynamicBidCalculation: boolean;
+  enforceRoleLimits: boolean;
+  roleLimits?: Record<string, { min?: number; max?: number }>;
   createdAt: string;
   _count: {
     teams: number;
@@ -61,6 +63,8 @@ export default function AuctionsPage() {
     bidTimerSeconds: 90,
     timerEnabled: true,
     useDynamicBidCalculation: false,
+    enforceRoleLimits: false,
+    roleLimitsText: "",
   });
   const [editFormData, setEditFormData] = useState({
     name: "",
@@ -74,7 +78,22 @@ export default function AuctionsPage() {
     bidTimerSeconds: 90,
     timerEnabled: true,
     useDynamicBidCalculation: false,
+    enforceRoleLimits: false,
+    roleLimitsText: "",
   });
+
+  const parseRoleLimitsText = (input: string): Record<string, { min?: number; max?: number }> | null => {
+    if (!input.trim()) return {};
+    try {
+      const parsed = JSON.parse(input);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return null;
+      }
+      return parsed;
+    } catch {
+      return null;
+    }
+  };
 
   useEffect(() => {
     fetchAuctions();
@@ -104,6 +123,13 @@ export default function AuctionsPage() {
       return;
     }
 
+    const roleLimits = parseRoleLimitsText(formData.roleLimitsText);
+    if (roleLimits === null) {
+      alert("Role limits must be valid JSON");
+      setCreating(false);
+      return;
+    }
+
     try {
       const response = await fetch("/api/auctions", {
         method: "POST",
@@ -121,6 +147,8 @@ export default function AuctionsPage() {
           bidTimerSeconds: formData.bidTimerSeconds,
           timerEnabled: formData.timerEnabled,
           useDynamicBidCalculation: formData.useDynamicBidCalculation,
+          enforceRoleLimits: formData.enforceRoleLimits,
+          roleLimits,
         }),
       });
 
@@ -138,6 +166,8 @@ export default function AuctionsPage() {
           bidTimerSeconds: 90,
           timerEnabled: true,
           useDynamicBidCalculation: false,
+          enforceRoleLimits: false,
+          roleLimitsText: "",
         });
         fetchAuctions();
       } else {
@@ -167,6 +197,8 @@ export default function AuctionsPage() {
       bidTimerSeconds: auction.bidTimerSeconds,
       timerEnabled: auction.timerEnabled,
       useDynamicBidCalculation: auction.useDynamicBidCalculation,
+      enforceRoleLimits: auction.enforceRoleLimits,
+      roleLimitsText: auction.roleLimits ? JSON.stringify(auction.roleLimits, null, 2) : "",
     });
     setEditOpen(true);
   };
@@ -179,6 +211,12 @@ export default function AuctionsPage() {
 
     if (editFormData.sport === "Other" && !editFormData.customSport.trim()) {
       alert("Please enter a sport name");
+      return;
+    }
+
+    const roleLimits = parseRoleLimitsText(editFormData.roleLimitsText);
+    if (roleLimits === null) {
+      alert("Role limits must be valid JSON");
       return;
     }
 
@@ -201,6 +239,8 @@ export default function AuctionsPage() {
           bidTimerSeconds: editFormData.bidTimerSeconds,
           timerEnabled: editFormData.timerEnabled,
           useDynamicBidCalculation: editFormData.useDynamicBidCalculation,
+          enforceRoleLimits: editFormData.enforceRoleLimits,
+          roleLimits,
         }),
       });
 
@@ -417,6 +457,36 @@ export default function AuctionsPage() {
                 </div>
               </div>
 
+              <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="enforceRoleLimits"
+                  checked={formData.enforceRoleLimits}
+                  onChange={(e) => setFormData({ ...formData, enforceRoleLimits: e.target.checked })}
+                  className="w-4 h-4 text-amber-600 bg-white border-gray-300 rounded focus:ring-amber-500 focus:ring-2"
+                />
+                <div className="flex-1">
+                  <Label htmlFor="enforceRoleLimits" className="cursor-pointer font-semibold">Enable Role Limit Enforcement</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    When disabled, role limits are saved but not enforced during bid/sell.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="roleLimitsText">Role Limits (JSON, optional)</Label>
+                <textarea
+                  id="roleLimitsText"
+                  value={formData.roleLimitsText}
+                  onChange={(e) => setFormData({ ...formData, roleLimitsText: e.target.value })}
+                  className="w-full min-h-28 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  placeholder='{"BATSMAN":{"min":3,"max":6},"SPINNER":{"max":2}}'
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Use uploaded role names as keys. Leave empty for no role caps.
+                </p>
+              </div>
+
               <div className="flex gap-2 justify-end">
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                   Cancel
@@ -600,6 +670,36 @@ export default function AuctionsPage() {
                 </div>
               </div>
 
+              <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="edit-enforceRoleLimits"
+                  checked={editFormData.enforceRoleLimits}
+                  onChange={(e) => setEditFormData({ ...editFormData, enforceRoleLimits: e.target.checked })}
+                  className="w-4 h-4 text-amber-600 bg-white border-gray-300 rounded focus:ring-amber-500 focus:ring-2"
+                />
+                <div className="flex-1">
+                  <Label htmlFor="edit-enforceRoleLimits" className="cursor-pointer font-semibold">Enable Role Limit Enforcement</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    When disabled, role limits are saved but not enforced during bid/sell.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="edit-roleLimitsText">Role Limits (JSON, optional)</Label>
+                <textarea
+                  id="edit-roleLimitsText"
+                  value={editFormData.roleLimitsText}
+                  onChange={(e) => setEditFormData({ ...editFormData, roleLimitsText: e.target.value })}
+                  className="w-full min-h-28 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  placeholder='{"BATSMAN":{"min":3,"max":6},"SPINNER":{"max":2}}'
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Use uploaded role names as keys. Leave empty for no role caps.
+                </p>
+              </div>
+
               <div className="flex gap-2 justify-end">
                 <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>
                   Cancel
@@ -667,6 +767,18 @@ export default function AuctionsPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Max Players/Team:</span>
                     <span className="font-medium">{auction.maxPlayersPerTeam}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Role Caps:</span>
+                    <span className="font-medium">
+                      {auction.roleLimits ? Object.keys(auction.roleLimits).length : 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Role Enforcement:</span>
+                    <span className="font-medium">
+                      {auction.enforceRoleLimits ? "ON" : "OFF"}
+                    </span>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">

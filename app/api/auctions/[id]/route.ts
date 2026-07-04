@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { parseRoleLimits } from "@/lib/role-limits";
+import { Prisma } from "@prisma/client";
 
 export async function GET(
   request: NextRequest,
@@ -68,9 +70,9 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { status, currentPlayerId, name, sport, maxTeams, maxPlayersPerTeam, minPlayersPerTeam, minPlayerPrice, minBidIncrement, bidTimerSeconds, timerEnabled, useDynamicBidCalculation } = body;
+    const { status, currentPlayerId, name, sport, maxTeams, maxPlayersPerTeam, minPlayersPerTeam, minPlayerPrice, minBidIncrement, bidTimerSeconds, timerEnabled, useDynamicBidCalculation, enforceRoleLimits, roleLimits } = body;
 
-    const updateData: any = {};
+    const updateData: Prisma.AuctionUpdateInput = {};
 
     // Update auction settings
     if (name !== undefined) {
@@ -102,6 +104,12 @@ export async function PATCH(
     }
     if (useDynamicBidCalculation !== undefined) {
       updateData.useDynamicBidCalculation = useDynamicBidCalculation;
+    }
+    if (enforceRoleLimits !== undefined) {
+      updateData.enforceRoleLimits = enforceRoleLimits;
+    }
+    if (roleLimits !== undefined) {
+      updateData.roleLimits = parseRoleLimits(roleLimits);
     }
 
     // Update status and current player

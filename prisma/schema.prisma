@@ -102,7 +102,7 @@ model Player {
   id          String       @id @default(cuid())
   name        String
   image       String?
-  role        PlayerRole
+  role        String
   basePrice   Int
   soldPrice   Int?
   status      PlayerStatus @default(UNSOLD)
@@ -143,6 +143,8 @@ model Auction {
   bidTimerSeconds   Int           @default(90)
   timerEnabled      Boolean       @default(true)
   useDynamicBidCalculation Boolean  @default(false)
+  enforceRoleLimits Boolean       @default(false)
+  roleLimits        Json?
 
   teams          Team[]
   players        Player[]       @relation("AuctionPlayers")
@@ -175,13 +177,6 @@ enum UserRole {
   ADMIN
   TEAM_OWNER
   VIEWER
-}
-
-enum PlayerRole {
-  BATSMAN
-  BOWLER
-  ALL_ROUNDER
-  WICKET_KEEPER
 }
 
 enum PlayerStatus {

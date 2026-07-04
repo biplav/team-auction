@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import * as XLSX from "xlsx";
+import { formatRoleLabel } from "@/lib/roles";
 
 interface Player {
   id: string;
@@ -109,7 +109,7 @@ export default function PlayersPage() {
           const knownFields = new Set([
             'name', 'Name', 'NAME', 'Player Name', 'player name',
             'phoneNumber', 'PhoneNumber', 'Phone Number', 'phone',
-            'role', 'Role', 'ROLE',
+            'role', 'Role', 'ROLE', 'category', 'Category', 'playerCategory', 'Player Category',
             'basePrice', 'Base Price', 'price', 'Price',
             'battingStyle', 'Batting Style',
             'bowlingStyle', 'Bowling Style',
@@ -133,7 +133,7 @@ export default function PlayersPage() {
           return {
             name: row.name || row.Name || row.NAME || row["Player Name"] || row["player name"] || "",
             phoneNumber: row.phoneNumber || row.PhoneNumber || row["Phone Number"] || row.phone || "",
-            role: row.role || row.Role || row.ROLE || "",
+            role: row.role || row.Role || row.ROLE || row.category || row.Category || row.playerCategory || row["Player Category"] || "",
             basePrice: basePrice === undefined || basePrice === null || basePrice === '' ? null : basePrice,
             battingStyle: row.battingStyle || row["Batting Style"] || "",
             bowlingStyle: row.bowlingStyle || row["Bowling Style"] || "",
@@ -315,7 +315,7 @@ export default function PlayersPage() {
       {
         name: "Virat Kohli",
         phoneNumber: "9876543210",
-        role: "BATSMAN",
+        role: "Batsman",
         basePrice: 5000000,
         battingStyle: "Right-hand",
         bowlingStyle: "Right-arm medium",
@@ -327,7 +327,7 @@ export default function PlayersPage() {
       {
         name: "Rohit Sharma",
         phoneNumber: "9876543211",
-        role: "BATSMAN",
+        role: "Batsman",
         basePrice: "", // Empty - will use default price
         battingStyle: "Right-hand",
         bowlingStyle: "Right-arm off break",
@@ -339,7 +339,7 @@ export default function PlayersPage() {
       {
         name: "Jasprit Bumrah",
         phoneNumber: "9876543212",
-        role: "BOWLER",
+        role: "Fast Bowler",
         basePrice: 4000000,
         battingStyle: "Right-hand",
         bowlingStyle: "Right-arm fast",
@@ -349,7 +349,7 @@ export default function PlayersPage() {
       {
         name: "Ravindra Jadeja",
         phoneNumber: "9876543213",
-        role: "ALL_ROUNDER",
+        role: "All Rounder",
         basePrice: "", // Empty - will use default price
         battingStyle: "Left-hand",
         bowlingStyle: "Left-arm orthodox",
@@ -359,7 +359,7 @@ export default function PlayersPage() {
       {
         name: "MS Dhoni",
         phoneNumber: "9876543214",
-        role: "WICKET_KEEPER",
+        role: "Wicket Keeper",
         basePrice: 3000000,
         battingStyle: "Right-hand",
         bowlingStyle: "Right-arm medium",
@@ -369,7 +369,7 @@ export default function PlayersPage() {
       {
         name: "KL Rahul",
         phoneNumber: "9876543215",
-        role: "WICKET_KEEPER",
+        role: "Wicket Keeper",
         basePrice: 3500000,
         battingStyle: "Right-hand",
         bowlingStyle: "Right-arm medium",
@@ -379,7 +379,7 @@ export default function PlayersPage() {
       {
         name: "Hardik Pandya",
         phoneNumber: "9876543216",
-        role: "ALL_ROUNDER",
+        role: "All Rounder",
         basePrice: 3200000,
         battingStyle: "Right-hand",
         bowlingStyle: "Right-arm fast-medium",
@@ -389,7 +389,7 @@ export default function PlayersPage() {
       {
         name: "Rishabh Pant",
         phoneNumber: "9876543217",
-        role: "WICKET_KEEPER",
+        role: "Wicket Keeper",
         basePrice: 3000000,
         battingStyle: "Left-hand",
         bowlingStyle: "NA",
@@ -399,7 +399,7 @@ export default function PlayersPage() {
       {
         name: "Shubman Gill",
         phoneNumber: "9876543218",
-        role: "BATSMAN",
+        role: "Batsman",
         basePrice: "", // Empty - will use default price
         battingStyle: "Right-hand",
         bowlingStyle: "Right-arm off break",
@@ -409,7 +409,7 @@ export default function PlayersPage() {
       {
         name: "Mohammed Shami",
         phoneNumber: "9876543219",
-        role: "BOWLER",
+        role: "Fast Bowler",
         basePrice: 2800000,
         battingStyle: "Right-hand",
         bowlingStyle: "Right-arm fast",
@@ -427,18 +427,7 @@ export default function PlayersPage() {
       ["Required Columns:"],
       ["  - name: Player's full name"],
       ["  - phoneNumber: Contact number (UNIQUE - used to identify and update existing players)"],
-      ["  - role: BATSMAN, BOWLER, ALL_ROUNDER, or WICKET_KEEPER"],
-      [""],
-      ["SMART ROLE PARSING:"],
-      ["  - You can enter MULTIPLE roles separated by commas (e.g., 'Batsman, Bowler')"],
-      ["  - System intelligently determines the best role using priority:"],
-      ["    1. Wicket Keeper (highest priority) - if mentioned, always selected"],
-      ["    2. All Rounder - if explicitly mentioned OR if both Batsman AND Bowler present"],
-      ["    3. Single role - Batsman or Bowler"],
-      ["  - Examples:"],
-      ["    'Batsman, Bowler' → ALL_ROUNDER"],
-      ["    'Wicket Keeper, Batsman' → WICKET_KEEPER"],
-      ["    'All Rounder, Bowler' → ALL_ROUNDER"],
+      ["  - role: Any category name from your tournament rules (e.g., Batsman, Spinner, Overseas)"],
       [""],
       ["IMPORTANT - Phone Number Matching:"],
       ["  - Phone numbers are UNIQUE identifiers"],
@@ -510,11 +499,7 @@ export default function PlayersPage() {
                   <li><strong>name</strong> or <strong>Player Name</strong> - Player's full name</li>
                   <li><strong>phoneNumber</strong> or <strong>Phone Number</strong> - Contact number (unique identifier - updates existing player if match found)</li>
                   <li>
-                    <strong>role</strong> - Single or multiple: BATSMAN, BOWLER, ALL_ROUNDER, WICKET_KEEPER
-                    <br/>
-                    <span className="text-xs text-gray-600 ml-4">
-                      💡 Can use multiple (e.g., "Batsman, Bowler" → ALL_ROUNDER). Priority: Wicket Keeper &gt; All Rounder &gt; Single role
-                    </span>
+                    <strong>role</strong> - Any role/category label you want (e.g., Batsman, Spinner, Finisher)
                   </li>
                 </ul>
                 <h3 className="font-semibold mt-3 mb-2">Optional Columns:</h3>
@@ -633,7 +618,7 @@ export default function PlayersPage() {
                         <TableCell className="font-medium">{player.name}</TableCell>
                         <TableCell>{player.stats?.phoneNumber || "-"}</TableCell>
                         <TableCell>
-                          <Badge variant="outline">{player.role.replace("_", " ")}</Badge>
+                          <Badge variant="outline">{formatRoleLabel(player.role)}</Badge>
                         </TableCell>
                         <TableCell>₹{player.basePrice.toLocaleString()}</TableCell>
                         <TableCell>
@@ -696,17 +681,13 @@ export default function PlayersPage() {
               </div>
               <div>
                 <Label htmlFor="role">Role*</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="BATSMAN">Batsman</SelectItem>
-                    <SelectItem value="BOWLER">Bowler</SelectItem>
-                    <SelectItem value="ALL_ROUNDER">All Rounder</SelectItem>
-                    <SelectItem value="WICKET_KEEPER">Wicket Keeper</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input
+                  id="role"
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  placeholder="e.g., Batsman, Spinner, Overseas"
+                  required
+                />
               </div>
               <div>
                 <Label htmlFor="basePrice">Base Price*</Label>

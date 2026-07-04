@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { getRoleMaxLimit } from "@/lib/role-limits";
+import { formatRoleLabel, normalizeRole } from "@/lib/roles";
 
 export async function POST(
   request: NextRequest,
@@ -49,6 +51,8 @@ export async function POST(
         auction: {
           select: {
             maxPlayersPerTeam: true,
+            enforceRoleLimits: true,
+            roleLimits: true,
           },
         },
         _count: {
@@ -71,6 +75,29 @@ export async function POST(
         },
         { status: 400 }
       );
+    }
+
+    const roleMaxLimit = team.auction.enforceRoleLimits
+      ? getRoleMaxLimit(team.auction.roleLimits, player.role)
+      : null;
+
+    if (roleMaxLimit !== null) {
+      const teamRoleCount = await prisma.player.count({
+        where: {
+          teamId,
+          role: normalizeRole(player.role),
+          status: "SOLD",
+        },
+      });
+
+      if (teamRoleCount >= roleMaxLimit) {
+        return NextResponse.json(
+          {
+            error: `${team.name} has reached the maximum limit for ${formatRoleLabel(player.role)} (${roleMaxLimit}).`,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Verify there are active bids for this player

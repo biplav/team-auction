@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { parseRoleLimits } from "@/lib/role-limits";
 
 // GET /api/auctions - List all auctions
 export async function GET() {
@@ -42,13 +43,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, sport, maxTeams, maxPlayersPerTeam, minPlayersPerTeam, minPlayerPrice, minBidIncrement, bidTimerSeconds, timerEnabled, useDynamicBidCalculation } = body;
+    const { name, sport, maxTeams, maxPlayersPerTeam, minPlayersPerTeam, minPlayerPrice, minBidIncrement, bidTimerSeconds, timerEnabled, useDynamicBidCalculation, enforceRoleLimits, roleLimits } = body;
 
     if (!name) {
       return NextResponse.json(
         { error: "Auction name is required" },
         { status: 400 }
       );
+    }
+
+    let normalizedRoleLimits = {};
+    if (roleLimits !== undefined) {
+      normalizedRoleLimits = parseRoleLimits(roleLimits);
     }
 
     const auction = await prisma.auction.create({
@@ -63,6 +69,8 @@ export async function POST(request: NextRequest) {
         bidTimerSeconds: bidTimerSeconds || 90,
         timerEnabled: timerEnabled !== undefined ? timerEnabled : true,
         useDynamicBidCalculation: useDynamicBidCalculation !== undefined ? useDynamicBidCalculation : false,
+        enforceRoleLimits: enforceRoleLimits !== undefined ? enforceRoleLimits : false,
+        roleLimits: normalizedRoleLimits,
         status: "NOT_STARTED",
       },
     });

@@ -1,5 +1,6 @@
 import { renderToBuffer } from "@react-pdf/renderer";
 import type { ComprehensiveReportData } from "./report-data";
+import { formatRoleLabel } from "@/lib/roles";
 
 /**
  * Generate Comprehensive Report PDF
@@ -78,7 +79,7 @@ export async function generateComprehensiveReportPDF(
             <View key={i} style={styles.tableRow}>
               <Text style={{ width: "10%" }}>{i + 1}</Text>
               <Text style={{ width: "30%" }}>{player.name}</Text>
-              <Text style={{ width: "20%" }}>{player.role.replace("_", " ")}</Text>
+              <Text style={{ width: "20%" }}>{formatRoleLabel(player.role)}</Text>
               <Text style={{ width: "20%" }}>{player.team.name}</Text>
               <Text style={{ width: "20%" }}>{formatCurrency(player.soldPrice)}</Text>
             </View>
@@ -106,7 +107,7 @@ export async function generateComprehensiveReportPDF(
             {team.players.map((player, i) => (
               <View key={i} style={styles.tableRow}>
                 <Text style={{ width: "40%" }}>{player.name}</Text>
-                <Text style={{ width: "25%" }}>{player.role.replace("_", " ")}</Text>
+                <Text style={{ width: "25%" }}>{formatRoleLabel(player.role)}</Text>
                 <Text style={{ width: "20%" }}>{formatCurrency(player.basePrice)}</Text>
                 <Text style={{ width: "20%" }}>{formatCurrency(player.soldPrice)}</Text>
               </View>
@@ -115,10 +116,11 @@ export async function generateComprehensiveReportPDF(
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>ROLE DISTRIBUTION</Text>
-            <View style={styles.row}><Text>Batsmen: {team.roleDistribution.BATSMAN}</Text></View>
-            <View style={styles.row}><Text>Bowlers: {team.roleDistribution.BOWLER}</Text></View>
-            <View style={styles.row}><Text>All-Rounders: {team.roleDistribution.ALL_ROUNDER}</Text></View>
-            <View style={styles.row}><Text>Wicket-Keepers: {team.roleDistribution.WICKET_KEEPER}</Text></View>
+            {Object.entries(team.roleDistribution).map(([role, count]) => (
+              <View key={role} style={styles.row}>
+                <Text>{formatRoleLabel(role)}: {count}</Text>
+              </View>
+            ))}
           </View>
         </Page>
       ))}
@@ -137,7 +139,7 @@ export async function generateComprehensiveReportPDF(
           </View>
           {data.roleSpending.map((rs, i) => (
             <View key={i} style={styles.tableRow}>
-              <Text style={{ width: "30%" }}>{rs.role.replace("_", " ")}</Text>
+              <Text style={{ width: "30%" }}>{formatRoleLabel(rs.role)}</Text>
               <Text style={{ width: "25%" }}>{formatCurrency(rs.totalSpent)}</Text>
               <Text style={{ width: "20%" }}>{rs.playerCount}</Text>
               <Text style={{ width: "25%" }}>{formatCurrency(rs.avgCost)}</Text>

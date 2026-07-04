@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { PlayerRole } from "@prisma/client";
+import { normalizeRole } from "@/lib/roles";
 
 // GET /api/players - List all players for an auction
 export async function GET(request: NextRequest) {
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     const player = await prisma.player.create({
       data: {
         name,
-        role: role as PlayerRole,
+        role: normalizeRole(role),
         basePrice: parseInt(basePrice),
         auctionId,
         stats: {
@@ -160,7 +160,7 @@ export async function PUT(request: NextRequest) {
 
     const updateData: any = {};
     if (name) updateData.name = name;
-    if (role) updateData.role = role as PlayerRole;
+    if (role) updateData.role = normalizeRole(role);
     if (basePrice) updateData.basePrice = parseInt(basePrice);
     if (phoneNumber || stats) {
       updateData.stats = {

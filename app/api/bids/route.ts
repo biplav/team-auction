@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { calculateDynamicMaxBid, formatCurrency } from "@/lib/budget";
+import { getRoleMaxLimit } from "@/lib/role-limits";
+import { formatRoleLabel, normalizeRole } from "@/lib/roles";
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,6 +35,8 @@ export async function POST(request: NextRequest) {
             maxPlayersPerTeam: true,
             minPlayerPrice: true,
             useDynamicBidCalculation: true,
+            enforceRoleLimits: true,
+            roleLimits: true,
           },
         },
         _count: {
@@ -47,6 +51,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Team not found" }, { status: 404 });
     }
 
+    // Get player and auction context
+    const player = await prisma.player.findUnique({
+      where: { id: playerId },
+      include: { auction: true },
+    });
+
+    if (!player) {
+      return NextResponse.json({ error: "Player not found" }, { status: 404 });
+    }
+
+    if (player.auctionId !== team.auction.id) {
+      return NextResponse.json(
+        { error: "Player and team do not belong to the same auction" },
+        { status: 400 }
+      );
+    }
+
     // Check if team has reached maximum squad size
     const currentPlayerCount = team._count.players;
     if (currentPlayerCount >= team.auction.maxPlayersPerTeam) {
@@ -56,6 +77,29 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       );
+    }
+
+    const roleMaxLimit = team.auction.enforceRoleLimits
+      ? getRoleMaxLimit(team.auction.roleLimits, player.role)
+      : null;
+
+    if (roleMaxLimit !== null) {
+      const teamRoleCount = await prisma.player.count({
+        where: {
+          teamId,
+          role: normalizeRole(player.role),
+          status: "SOLD",
+        },
+      });
+
+      if (teamRoleCount >= roleMaxLimit) {
+        return NextResponse.json(
+          {
+            error: `Role limit reached for ${formatRoleLabel(player.role)}. Maximum allowed: ${roleMaxLimit}.`,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Check basic budget
@@ -103,16 +147,6 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       );
-    }
-
-    // Get player to check current auction
-    const player = await prisma.player.findUnique({
-      where: { id: playerId },
-      include: { auction: true },
-    });
-
-    if (!player) {
-      return NextResponse.json({ error: "Player not found" }, { status: 404 });
     }
 
     if (player.auction.status !== "IN_PROGRESS") {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Minus, AlertTriangle } from "lucide-react";
-import { Socket } from "socket.io-client";
-import { createSocketClient } from "@/lib/socket-client";
 import { canAffordPlayer, formatCurrency as formatCurrencyUtil } from "@/lib/budget";
-import confetti from "canvas-confetti";
 import { BidCountdownTimer } from "@/components/BidCountdownTimer";
 import { getDisplayablePlayerStats } from "@/lib/utils/player-utils";
 import { formatNumberWithCommas, parseNumberFromCommas } from "@/lib/utils/currency-utils";
@@ -80,7 +77,6 @@ export default function BiddingPage() {
   const [myTeam, setMyTeam] = useState<Team | null>(null);
   const [bids, setBids] = useState<Bid[]>([]);
   const [bidAmount, setBidAmount] = useState<number>(0);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [soldPlayer, setSoldPlayer] = useState<SoldPlayerData | null>(null);
@@ -91,10 +87,6 @@ export default function BiddingPage() {
     reservedAmount: number;
     reservedPlayerCount: number;
   } | null>(null);
-
-  // Refs to maintain current values for socket handlers (avoiding stale closures)
-  const currentPlayerRef = useRef<Player | null>(null);
-  const auctionRef = useRef<Auction | null>(null);
 
   // Use auction's minimum bid increment setting (fallback to 50k for backward compatibility)
   const bidIncrement = auction?.minBidIncrement ?? 50000;
@@ -108,15 +100,6 @@ export default function BiddingPage() {
     myTeamBudget: myTeam?.remainingBudget,
     tabHidden: typeof document !== 'undefined' ? document.hidden : 'unknown'
   });
-
-  // Update refs when state changes
-  useEffect(() => {
-    currentPlayerRef.current = currentPlayer;
-  }, [currentPlayer]);
-
-  useEffect(() => {
-    auctionRef.current = auction;
-  }, [auction]);
 
   // Handle page visibility to force updates when tab becomes active
   useEffect(() => {
@@ -172,176 +155,22 @@ export default function BiddingPage() {
   }, [auction?.currentPlayerId]);
 
   useEffect(() => {
-    // Initialize socket connection
-    const socketInstance = createSocketClient();
-
-    socketInstance.on("connect", () => {
-      console.log("[DEBUG] ✅ Connected to socket server", {
-        socketId: socketInstance.id,
-        timestamp: new Date().toISOString(),
-        tabHidden: document.hidden
-      });
-      socketInstance.emit("join-auction", auctionId);
-    });
-
-    socketInstance.on("disconnect", (reason) => {
-      console.log("[DEBUG] ❌ Socket disconnected", {
-        reason,
-        timestamp: new Date().toISOString(),
-        tabHidden: document.hidden
-      });
-    });
-
-    socketInstance.on("connect_error", (error) => {
-      console.error("[DEBUG] ❌ Socket connection error", {
-        error: error.message,
-        timestamp: new Date().toISOString()
-      });
-    });
-
-    socketInstance.on("reconnect", (attemptNumber) => {
-      console.log("[DEBUG] 🔄 Socket reconnected", {
-        attemptNumber,
-        timestamp: new Date().toISOString()
-      });
-    });
-
-    socketInstance.on("reconnect_attempt", (attemptNumber) => {
-      console.log("[DEBUG] 🔄 Socket reconnection attempt", {
-        attemptNumber,
-        timestamp: new Date().toISOString()
-      });
-    });
-
-    socketInstance.on("reconnect_error", (error) => {
-      console.error("[DEBUG] ❌ Socket reconnection error", {
-        error: error.message,
-        timestamp: new Date().toISOString()
-      });
-    });
-
-    socketInstance.on("reconnect_failed", () => {
-      console.error("[DEBUG] ❌ Socket reconnection failed", {
-        timestamp: new Date().toISOString()
-      });
-    });
-
-    socketInstance.on("bid-placed", (data) => {
-      console.log("[DEBUG] Socket: bid-placed event received", {
-        timestamp: new Date().toISOString(),
-        playerId: data.playerId,
-        tabHidden: document.hidden,
-        currentPlayerRef: currentPlayerRef.current?.id
-      });
-      if (data.playerId) {
-        console.log('[DEBUG] Calling fetchBids for player:', data.playerId);
-        fetchBids(data.playerId);
-        console.log('[DEBUG] Calling fetchData to refresh team budgets');
-        fetchData(false);
-        console.log('[DEBUG] Incrementing renderKey from', renderKey);
-        setRenderKey(prev => {
-          console.log('[DEBUG] RenderKey updated:', prev, '=>', prev + 1);
-          return prev + 1;
-        });
-      } else {
-        console.log('[DEBUG] No playerId in bid-placed event, skipping update');
+    // Polling fallback for Vercel/non-websocket environments
+    const pollingInterval = setInterval(() => {
+      fetchData(false);
+      if (currentPlayer?.id) {
+        fetchBids(currentPlayer.id);
       }
-    });
-
-    socketInstance.on("current-player-changed", (data) => {
-      console.log("Player changed:", data);
-      if (data.playerId) {
-        fetchCurrentPlayer(data.playerId);
-        fetchData(false); // Refresh auction state and team budgets
+      if (myTeam?.id && currentPlayer?.id) {
+        fetchMaxBidInfo(myTeam.id, currentPlayer.id);
       }
-    });
-
-    socketInstance.on("player-sold", (data) => {
-      console.log("Player sold:", data);
-
-      // Trigger sold animation
-      if (data.player && data.team) {
-        setSoldPlayer({
-          playerName: data.player.name,
-          playerRole: data.player.role,
-          teamName: data.team.name,
-          teamColor: data.team.color,
-          soldPrice: data.soldPrice,
-        });
-        setShowSoldAnimation(true);
-
-        // Fire confetti
-        const duration = 3000;
-        const end = Date.now() + duration;
-
-        (function frame() {
-          confetti({
-            particleCount: 2,
-            angle: 60,
-            spread: 55,
-            origin: { x: 0 },
-            colors: data.team.color ? [data.team.color] : undefined,
-          });
-          confetti({
-            particleCount: 2,
-            angle: 120,
-            spread: 55,
-            origin: { x: 1 },
-            colors: data.team.color ? [data.team.color] : undefined,
-          });
-
-          if (Date.now() < end) {
-            requestAnimationFrame(frame);
-          }
-        }());
-
-        // Hide animation after 4 seconds
-        setTimeout(() => {
-          setShowSoldAnimation(false);
-          setSoldPlayer(null);
-        }, 4000);
-      }
-
-      fetchData(false); // Don't show loader on socket updates
-    });
-
-    socketInstance.on("auction-paused", () => {
-      if (auctionRef.current) {
-        setAuction({ ...auctionRef.current, status: "PAUSED" });
-      }
-    });
-
-    socketInstance.on("auction-resumed", () => {
-      if (auctionRef.current) {
-        setAuction({ ...auctionRef.current, status: "IN_PROGRESS" });
-      }
-    });
-
-    socketInstance.on("bids-discarded", (data) => {
-      console.log("Bids discarded:", data);
-      if (data.playerId) {
-        setBids([]);
-      }
-    });
-
-    setSocket(socketInstance);
-
-    // Periodic socket connection check (every 5 seconds)
-    const connectionCheckInterval = setInterval(() => {
-      console.log("[DEBUG] 🔍 Socket status check", {
-        connected: socketInstance.connected,
-        socketId: socketInstance.id,
-        tabHidden: document.hidden,
-        timestamp: new Date().toISOString()
-      });
-    }, 5000);
+      setRenderKey((prev) => prev + 1);
+    }, 30000);
 
     return () => {
-      clearInterval(connectionCheckInterval);
-      socketInstance.emit("leave-auction", auctionId);
-      socketInstance.disconnect();
+      clearInterval(pollingInterval);
     };
-  }, [auctionId]);
+  }, [auctionId, currentPlayer?.id, myTeam?.id]);
 
   useEffect(() => {
     console.log('[DEBUG] useEffect[currentPlayer]: currentPlayer changed', currentPlayer?.id);
@@ -545,13 +374,8 @@ export default function BiddingPage() {
       if (res.ok) {
         const bid = await res.json();
         triggerHaptic('success'); // Vibrate on successful bid
-        socket?.emit("place-bid", {
-          auctionId,
-          playerId: currentPlayer.id,
-          teamId: myTeam.id,
-          amount: bidAmount,
-        });
         fetchBids(currentPlayer.id);
+        fetchData(false);
         setBidAmount(bidAmount + bidIncrement);
       } else {
         const error = await res.json();

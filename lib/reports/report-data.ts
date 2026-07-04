@@ -48,12 +48,7 @@ export interface ComprehensiveReportData {
       basePrice: number;
       soldPrice: number;
     }>;
-    roleDistribution: {
-      BATSMAN: number;
-      BOWLER: number;
-      ALL_ROUNDER: number;
-      WICKET_KEEPER: number;
-    };
+    roleDistribution: Record<string, number>;
   }>;
   soldPlayers: Array<{
     id: string;
@@ -199,15 +194,10 @@ export async function getComprehensiveReportData(
 
     const roleDistribution = team.players.reduce(
       (acc, player) => {
-        acc[player.role as keyof typeof acc] = (acc[player.role as keyof typeof acc] || 0) + 1;
+        acc[player.role] = (acc[player.role] || 0) + 1;
         return acc;
       },
-      {
-        BATSMAN: 0,
-        BOWLER: 0,
-        ALL_ROUNDER: 0,
-        WICKET_KEEPER: 0,
-      }
+      {} as Record<string, number>
     );
 
     return {
