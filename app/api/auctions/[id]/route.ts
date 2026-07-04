@@ -124,7 +124,9 @@ export async function PATCH(
       }
     }
     if (currentPlayerId !== undefined) {
-      updateData.currentPlayerId = currentPlayerId;
+      updateData.currentPlayer = currentPlayerId
+        ? { connect: { id: currentPlayerId } }
+        : { disconnect: true };
       // Set timestamp when current player changes
       updateData.currentPlayerSetAt = new Date();
     }

@@ -254,7 +254,7 @@ export default function ConductAuctionPage() {
         const res = await fetch(`/api/teams?auctionId=${auctionId}`);
         if (res.ok) {
           const data = await res.json();
-          setTeams(data);
+          setTeams(Array.isArray(data) ? data : []);
         }
       }, 3000); // Poll every 3 seconds
 
@@ -280,12 +280,12 @@ export default function ConductAuctionPage() {
 
       if (playersRes.ok) {
         const playersData = await playersRes.json();
-        setPlayers(playersData);
+        setPlayers(Array.isArray(playersData) ? playersData : []);
       }
 
       if (teamsRes.ok) {
         const teamsData = await teamsRes.json();
-        setTeams(teamsData);
+        setTeams(Array.isArray(teamsData) ? teamsData : []);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -303,7 +303,7 @@ export default function ConductAuctionPage() {
       const res = await fetch(`/api/bids?playerId=${playerId}`);
       if (res.ok) {
         const data = await res.json();
-        setBids(data);
+        setBids(Array.isArray(data) ? data : []);
       }
     } catch (error) {
       console.error("Error fetching bids:", error);

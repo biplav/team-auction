@@ -232,7 +232,7 @@ export default function AuctionDisplayPage() {
       if (auctionRes.ok) {
         const auctionData = await auctionRes.json();
         setAuction(auctionData);
-        setTeams(auctionData.teams || []);
+        setTeams(Array.isArray(auctionData.teams) ? auctionData.teams : []);
 
         // Fetch current player if auction has one
         if (auctionData.currentPlayerId) {
@@ -266,7 +266,7 @@ export default function AuctionDisplayPage() {
       const res = await fetch(`/api/bids?playerId=${playerId}`);
       if (res.ok) {
         const data = await res.json();
-        setBids(data);
+        setBids(Array.isArray(data) ? data : []);
       }
     } catch (error) {
       console.error("Error fetching bids:", error);
