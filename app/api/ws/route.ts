@@ -1,15 +1,17 @@
-import {
-  experimental_upgradeWebSocket,
-  type WebSocketData,
-} from "@vercel/functions";
+import * as vercelFunctions from "@vercel/functions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type UpgradeSocket = {
   send: (data: string) => void;
-  on: (event: "message" | "close" | "error", listener: (data?: WebSocketData) => void) => void;
+  on: (event: "message" | "close" | "error", listener: (data?: unknown) => void) => void;
 };
+
+type UpgradeFn = (handler: (ws: UpgradeSocket) => void) => Response;
+const experimentalUpgradeWebSocket = (vercelFunctions as unknown as {
+  experimental_upgradeWebSocket?: UpgradeFn;
+}).experimental_upgradeWebSocket;
 
 type ClientState = {
   id: string;
@@ -129,13 +131,25 @@ function handleEvent(hub: WsHub, ws: UpgradeSocket, envelope: IncomingEnvelope) 
 }
 
 export function GET() {
-  return experimental_upgradeWebSocket((ws) => {
+  if (!experimentalUpgradeWebSocket) {
+    return new Response(
+      JSON.stringify({
+        error: "Vercel WebSocket beta API is not available in this build runtime.",
+      }),
+      {
+        status: 501,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+
+  return experimentalUpgradeWebSocket((ws) => {
     const hub = getHub();
     const id = crypto.randomUUID();
     hub.sockets.set(ws as UpgradeSocket, { id });
     sendEvent(ws as UpgradeSocket, "__connected", { id });
 
-    (ws as UpgradeSocket).on("message", (data?: WebSocketData) => {
+    (ws as UpgradeSocket).on("message", (data?: unknown) => {
       if (!data) return;
       let envelope: IncomingEnvelope;
       try {
